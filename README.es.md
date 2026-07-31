@@ -2,7 +2,7 @@
 
 *Leer en otros idiomas: [English](README.md), [Español](README.es.md).*
 
-> Skill de Claude Code para la generación de imágenes y videos con IA usando Google Gemini — Nano Banana 2 Lite, Nano Banana Pro, Gemini Omni Flash. Control de costos antes de ejecuciones de pago, imágenes de referencia reales y un registro de prompts al lado de cada archivo.
+> Skill para la generación de imágenes y videos con IA usando Google Gemini (Nano Banana 2 Lite, Nano Banana Pro, Gemini Omni Flash). Compatible con **Antigravity**, **Gemini CLI**, **Claude Code**, **Cursor** y otros entornos de agentes. Control de costos antes de ejecuciones de pago, imágenes de referencia reales y un registro de prompts al lado de cada archivo.
 
 Un solo comando que genera imágenes y videos a través de los modelos de medios de Gemini de Google, que nunca te sorprende con una factura inesperada y archiva cada resultado —con el prompt exacto que lo generó— en una sola carpeta.
 
@@ -22,16 +22,16 @@ Diseñado exclusivamente para Google: una sola clave de API, una sola factura y 
 
 Cada modelo tiene su propio archivo de receta en `models/` que contiene la estructura exacta de la solicitud, el manejo de respuestas y las consideraciones especiales. Cuando Google lanza un mejor modelo, simplemente agregas un archivo markdown y la skill lo aprende. Nada más cambia.
 
-## Instalación
+## Instalación y Agentes Compatibles
 
-Requisitos: una [clave de API de Google AI Studio](https://aistudio.google.com/apikey), y [Claude Code](https://docs.anthropic.com/en/docs/claude-code) o cualquier otro agente que lea archivos de skill.
+Requisitos: una [clave de API de Google AI Studio](https://aistudio.google.com/apikey) (o la integración de la herramienta integrada sin clave de **Antigravity**), y **Antigravity**, **Gemini CLI**, **Claude Code** o cualquier otro agente que lea archivos de skill.
 
 ```bash
 npx skills add AntonioCardenas/generate-nanobanana
 export GEMINI_API_KEY=your_key_here   # o agrégalo a tu perfil de shell
 ```
 
-Esto utiliza el [skills CLI](https://github.com/vercel-labs/skills), que resuelve `owner/repo` directamente a este repositorio y coloca la skill en el directorio de configuración de tu agente. Es compatible con Claude Code, Cursor, Codex, OpenCode y otros — selecciona tu objetivo con `-a claude-code`, o agrega `-g` para instalar de forma global en lugar del proyecto actual.
+Esto utiliza el [skills CLI](https://github.com/vercel-labs/skills), que resuelve `owner/repo` directamente a este repositorio y coloca la skill en el directorio de configuración de tu agente. Es compatible con **Antigravity**, **Gemini CLI**, **Claude Code**, **Cursor**, **Codex**, **OpenCode** y otros — selecciona tu objetivo con `-a claude-code` o `-a gemini-cli`, o agrega `-g` para instalar de forma global en lugar del proyecto actual.
 
 Si prefieres hacerlo manualmente:
 

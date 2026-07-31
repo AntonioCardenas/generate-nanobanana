@@ -2,7 +2,7 @@
 
 *Read this in other languages: [English](README.md), [Español](README.es.md).*
 
-> Claude Code skill for AI image &amp; video generation with Google Gemini — Nano Banana 2 Lite, Nano Banana Pro, Gemini Omni Flash. Cost gates before paid runs, real reference images, a prompt log beside every file.
+> AI image &amp; video generation skill using Google Gemini (Nano Banana 2 Lite, Nano Banana Pro, Gemini Omni Flash). Supported on **Antigravity**, **Gemini CLI**, **Claude Code**, **Cursor**, and other agent environments. Cost gates before paid runs, real reference images, a prompt log beside every file.
 > 
 
 One command that generates images and videos through Google's Gemini media models, never surprises you with a bill, and files every output — with the exact prompt that made it — in one folder.
@@ -23,16 +23,16 @@ Google-only by design: one API key, one bill, and the newest Gemini features (Na
 
 Each model has its own recipe file in `models/` holding the exact request shape, response handling, and gotchas. When Google ships a better model, you add one markdown file and the skill learns it. Nothing else changes.
 
-## Install
+## Install & Supported Agents
 
-Requirements: a [Google AI Studio API key](https://aistudio.google.com/apikey), and [Claude Code](https://docs.anthropic.com/en/docs/claude-code) or any other agent that reads skill files.
+Requirements: a [Google AI Studio API key](https://aistudio.google.com/apikey) (or **Antigravity** zero-key built-in tool fallback), and **Antigravity**, **Gemini CLI**, **Claude Code**, or any agent that reads skill files.
 
 ```bash
 npx skills add AntonioCardenas/generate-nanobanana
 export GEMINI_API_KEY=your_key_here   # or put it in your shell profile
 ```
 
-That uses the [skills CLI](https://github.com/vercel-labs/skills), which resolves `owner/repo` straight to this repository and drops the skill into your agent's config directory. It supports Claude Code, Cursor, Codex, OpenCode and others — pick your target with `-a claude-code`, or add `-g` to install globally rather than into the current project.
+That uses the [skills CLI](https://github.com/vercel-labs/skills), which resolves `owner/repo` straight to this repository and drops the skill into your agent's config directory. It supports **Antigravity**, **Gemini CLI**, **Claude Code**, **Cursor**, **Codex**, **OpenCode**, and others — pick your target with `-a claude-code` or `-a gemini-cli`, or add `-g` to install globally rather than into the current project.
 
 Prefer to do it by hand:
 

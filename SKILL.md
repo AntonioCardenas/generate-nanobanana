@@ -34,9 +34,18 @@ Rough costs (check the recipe files for current numbers — these move):
 
 Flow is Google's creative front-end for these same models, but it's a web UI, not an API — there's nothing to script against. If a task needs something Flow does that the raw API doesn't expose well (shot-by-shot scene building, camera controls, frame-accurate editing), say so and point the user to Flow directly rather than approximating it through API calls.
 
+## Supported Environments & Agents
+
+This skill works across multiple AI agents and CLI tools:
+- **Antigravity**: Supports direct Python API execution with `GEMINI_API_KEY` or native `generate_image` tool fallback for instant zero-key image previews.
+- **Gemini CLI**: Invoke via `gemini-cli` or shell integration (`gemini generate`).
+- **Claude Code, Cursor, Codex, OpenCode**: Compatible with any agent reading `.agents/skills` or standard `SKILL.md` definitions.
+
 ## Authentication
 
-Calls use a Google AI Studio key in the `GEMINI_API_KEY` environment variable. If it's missing, stop and ask for it — don't fall back to Vertex AI or a service account unless told to switch; that's a different billing and auth surface entirely.
+Calls use a Google AI Studio key in the `GEMINI_API_KEY` environment variable. If it's missing:
+- In standard agent/CLI runs: Stop and ask for the key — don't fall back to Vertex AI or a service account unless explicitly requested.
+- In **Antigravity**: If `GEMINI_API_KEY` is not present, you can seamlessly fall back to Antigravity's built-in `generate_image` tool for instant generation.
 
 ## Output
 
