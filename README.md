@@ -11,7 +11,9 @@ You say "generate a thumbnail of X." The skill routes the job to the right model
 
 Google-only by design: one API key, one bill, and the newest Gemini features (Nano Banana Pro's multi-image fusion, Omni Flash's synced audio) the day they ship — no aggregator in the middle.
 
-<!-- Add 2-3 sample generations here. A draft-on-Lite vs final-on-Pro pair shows the whole workflow in one image. -->
+[![Nano Banana Y2K Poster Example](nanobanana_y2k_poster.png)](nanobanana_y2k_poster.png)
+*Example output generated with Nano Banana Pro: Y2K poster aesthetic.*
+
 
 ## Models
 
@@ -27,12 +29,14 @@ Each model has its own recipe file in `models/` holding the exact request shape,
 
 Requirements: a [Google AI Studio API key](https://aistudio.google.com/apikey) (or **Antigravity** zero-key built-in tool fallback), and **Antigravity**, **Gemini CLI**, **Claude Code**, or any agent that reads skill files.
 
+Install directly using [`npx`](https://docs.npmjs.com/cli/v7/commands/npx) via the [skills CLI](https://github.com/vercel-labs/skills):
+
 ```bash
 npx skills add AntonioCardenas/generate-nanobanana
 export GEMINI_API_KEY=your_key_here   # or put it in your shell profile
 ```
 
-That uses the [skills CLI](https://github.com/vercel-labs/skills), which resolves `owner/repo` straight to this repository and drops the skill into your agent's config directory. It supports **Antigravity**, **Gemini CLI**, **Claude Code**, **Cursor**, **Codex**, **OpenCode**, and others — pick your target with `-a claude-code` or `-a gemini-cli`, or add `-g` to install globally rather than into the current project.
+This uses `npx` with the [skills CLI](https://github.com/vercel-labs/skills), which resolves `owner/repo` straight to this repository and drops the skill into your agent's config directory. It supports **Antigravity**, **Gemini CLI**, **Claude Code**, **Cursor**, **Codex**, **OpenCode**, and others — pick your target with `-a claude-code` or `-a gemini-cli`, or add `-g` to install globally rather than into the current project.
 
 Prefer to do it by hand:
 

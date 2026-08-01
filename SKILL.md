@@ -41,6 +41,20 @@ This skill works across multiple AI agents and CLI tools:
 - **Gemini CLI**: Invoke via `gemini-cli` or shell integration (`gemini generate`).
 - **Claude Code, Cursor, Codex, OpenCode**: Compatible with any agent reading `.agents/skills` or standard `SKILL.md` definitions.
 
+## Installation
+
+Install using the skills CLI:
+
+```bash
+npx skills add AntonioCardenas/generate-nanobanana
+```
+
+Or manually clone into your agent's skills directory:
+
+```bash
+git clone https://github.com/AntonioCardenas/generate-nanobanana ~/.claude/skills/generate
+```
+
 ## Authentication
 
 Calls use a Google AI Studio key in the `GEMINI_API_KEY` environment variable. If it's missing:

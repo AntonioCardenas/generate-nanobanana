@@ -1,0 +1,27 @@
+{
+  "name": "generate-nanobanana",
+  "version": "1.0.0",
+  "description": "AI image & video generation skill using Google Gemini media models (Nano Banana 2 Lite, Nano Banana Pro, Gemini Omni Flash)",
+  "main": "SKILL.md",
+  "keywords": [
+    "agent-skill",
+    "skills",
+    "gemini",
+    "nano-banana",
+    "image-generation",
+    "video-generation",
+    "claude-code",
+    "antigravity",
+    "cursor"
+  ],
+  "author": "Antonio Cardenas",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AntonioCardenas/generate-nanobanana.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AntonioCardenas/generate-nanobanana/issues"
+  },
+  "homepage": "https://github.com/AntonioCardenas/generate-nanobanana#readme"
+}

@@ -10,7 +10,9 @@ Tú dices "genera una miniatura de X". La skill redirige el trabajo al modelo co
 
 Diseñado exclusivamente para Google: una sola clave de API, una sola factura y las características más recientes de Gemini (fusión de múltiples imágenes de Nano Banana Pro, audio sincronizado de Omni Flash) el mismo día de su lanzamiento — sin intermediarios.
 
-<!-- Agregar de 2 a 3 generaciones de muestra aquí. Un par de borrador en Lite vs final en Pro muestra todo el flujo de trabajo en una sola imagen. -->
+[![Ejemplo de Póster Y2K Nano Banana](nanobanana_y2k_poster.png)](nanobanana_y2k_poster.png)
+*Ejemplo de resultado generado con Nano Banana Pro: estética de póster Y2K.*
+
 
 ## Modelos
 
@@ -26,12 +28,14 @@ Cada modelo tiene su propio archivo de receta en `models/` que contiene la estru
 
 Requisitos: una [clave de API de Google AI Studio](https://aistudio.google.com/apikey) (o la integración de la herramienta integrada sin clave de **Antigravity**), y **Antigravity**, **Gemini CLI**, **Claude Code** o cualquier otro agente que lea archivos de skill.
 
+Instala directamente usando [`npx`](https://docs.npmjs.com/cli/v7/commands/npx) mediante el [skills CLI](https://github.com/vercel-labs/skills):
+
 ```bash
 npx skills add AntonioCardenas/generate-nanobanana
 export GEMINI_API_KEY=your_key_here   # o agrégalo a tu perfil de shell
 ```
 
-Esto utiliza el [skills CLI](https://github.com/vercel-labs/skills), que resuelve `owner/repo` directamente a este repositorio y coloca la skill en el directorio de configuración de tu agente. Es compatible con **Antigravity**, **Gemini CLI**, **Claude Code**, **Cursor**, **Codex**, **OpenCode** y otros — selecciona tu objetivo con `-a claude-code` o `-a gemini-cli`, o agrega `-g` para instalar de forma global en lugar del proyecto actual.
+Esto utiliza `npx` con el [skills CLI](https://github.com/vercel-labs/skills), que resuelve `owner/repo` directamente a este repositorio y coloca la skill en el directorio de configuración de tu agente. Es compatible con **Antigravity**, **Gemini CLI**, **Claude Code**, **Cursor**, **Codex**, **OpenCode** y otros — selecciona tu objetivo con `-a claude-code` o `-a gemini-cli`, o agrega `-g` para instalar de forma global en lugar del proyecto actual.
 
 Si prefieres hacerlo manualmente:
 
