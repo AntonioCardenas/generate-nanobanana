@@ -44,7 +44,27 @@ response = client.models.generate_content(
 
 ## Response handling
 
-Walk `response.candidates[0].content.parts`. Each part is either `inline_data` (the image — base64 bytes, decode and write to disk with the mime type's extension) or `text` (the model's commentary — safe to log but not the file). `response.usage_metadata` carries token counts if you want to compute exact cost per generation rather than using the ballpark above.
+```python
+from pathlib import Path
+
+parts = response.candidates[0].content.parts
+image_part = next((p for p in parts if p.inline_data is not None), None)
+
+if image_part is None:
+    # No image came back — only text (a refusal, safety block, or commentary).
+    # Surface that text to the user and stop. No file, no sidecar.
+    raise RuntimeError(" ".join(p.text for p in parts if p.text) or "empty response")
+
+Path(output_path).write_bytes(image_part.inline_data.data)
+assert Path(output_path).stat().st_size > 0
+```
+
+Two rules that are not optional:
+
+- **`inline_data.data` is already raw bytes** — the `google-genai` SDK un-base64s it for you. Base64-decoding it again writes a corrupt file or crashes mid-save; this is the classic way a generation "succeeds" but no image ever lands on disk. Write the bytes as-is, with the extension matching `inline_data.mime_type`.
+- **Verify the image file exists and is non-empty before writing the sidecar.** The sidecar is the record that an image exists — a sidecar without its image is a false log entry.
+
+`text` parts are the model's commentary — safe to relay to the user, never the file. `response.usage_metadata` carries token counts if you want exact cost per generation rather than the ballpark above.
 
 ## Notes
 

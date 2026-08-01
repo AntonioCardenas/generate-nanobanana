@@ -44,7 +44,7 @@ response = client.models.generate_content(
 
 ## Response handling
 
-Same shape as Nano Banana 2 Lite: iterate `response.candidates[0].content.parts`, decode `inline_data` to a file, use `response.usage_metadata` for exact cost if needed.
+Same shape as Nano Banana 2 Lite — see that recipe for the full save snippet. Find the part with `inline_data`, write its `data` to disk **as-is** (already raw bytes — never base64-decode it again), verify the file exists and is non-empty **before** writing the sidecar. Text-only response means the generation failed: surface the text, save nothing, log nothing. Use `response.usage_metadata` for exact cost if needed.
 
 ## Notes
 

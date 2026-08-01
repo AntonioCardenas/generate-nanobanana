@@ -1,6 +1,6 @@
 ---
 name: generate
-description: Generate images and videos using Google's Gemini media models (Nano Banana 2 Lite, Nano Banana 2, Nano Banana Pro, Gemini Omni Flash) via the Gemini API. Use this whenever the user asks to generate, create, or make an image or video, wants a thumbnail, wants to animate a still image, says "generate on brand" or "generate from reference", wants to link or import a folder of reference images, or invokes /generate or /ref-gen — even if they don't name a specific model, and even if they just describe a visual they want without saying "generate."
+description: Generate images and videos using Google's Gemini media models (Nano Banana 2 Lite, Nano Banana 2, Nano Banana Pro, Gemini Omni Flash) via the Gemini API. Use this whenever the user asks to generate, create, or make an image or video, wants a thumbnail, wants to animate a still image, says "generate on brand" or "generate from reference", wants to link or import a folder of reference images, invokes /generate or /ref-gen, or asks to update this skill ("/generate update") — even if they don't name a specific model, and even if they just describe a visual they want without saying "generate."
 ---
 
 # /generate
@@ -12,7 +12,7 @@ Calls Google's Gemini media models directly through the Gemini API — no third-
 1. **Route** — pick the model for the job (draft image, standard image, quality image, or video) and read its recipe file before calling anything. Recipes hold the exact request shape and any quirks that have shown up since the model shipped.
 2. **Load references** — pull any real reference images (logos, faces, style shots) from `generations/refs/`, or from a named reference set if the request invokes `/ref-gen` or says "from reference" or "on brand" (see Reference library). Never substitute a text description for a reference image that exists.
 3. **Generate** — call the API per the recipe. Images reply synchronously; video is a submit-then-poll operation. Save the result flat into the generations folder.
-4. **Log** — write the sidecar JSON next to the file (see Logging).
+4. **Log** — verify the generated file is actually on disk and non-empty, then write the sidecar JSON next to it (see Logging). Never log a generation whose file isn't there.
 
 ## Models
 
@@ -35,7 +35,7 @@ Rough costs (check the recipe files for current numbers — these move):
 
 ## Reference library
 
-Loose files in `generations/refs/` work as always. On top of that, a folder one level down is a **named reference set** — the images for one brand, product, or recurring character, grouped so the user can pull them all in with one phrase.
+Loose files in `generations/refs/` (workspace-relative, like all output — see Output) work as always. On top of that, a folder one level down is a **named reference set** — the images for one brand, product, or recurring character, grouped so the user can pull them all in with one phrase.
 
 A user registers a folder in one of two ways:
 
@@ -67,7 +67,7 @@ If the user doesn't name the set, default to the folder's own name. To resolve a
 - **`/ref-gen <set> …`** — use that set's images as the reference inputs for the generation. The spoken form "generate from reference `<set>` …" works the same, and a raw folder path in place of a set name is fine too — treat it as a one-off set.
 - **"generate on brand …"** — shorthand for `/ref-gen brand`. If no set named `brand` exists yet, ask the user for a folder to link or import before generating anything.
 
-**Where the output lands.** By default, ref-based generations save flat into `~/generations` like everything else. A set can override that with an `output` folder — set it in `sets.json`, or just say "save these to public/images" — and then the generated file and its sidecar land there instead, ready to use in the project. Outputs never save into the refs folder itself: references in, results out, the two never mix.
+**Where the output lands.** By default, ref-based generations save flat into the workspace's `generations/` folder like everything else. A set can override that with an `output` folder — set it in `sets.json`, or just say "save these to public/images" — and then the generated file and its sidecar land there instead, ready to use in the project. Outputs never save into the refs folder itself: references in, results out, the two never mix.
 
 Don't dump the whole folder into every call. Pick the images relevant to the job — the logo for a logo placement, style shots for a look, the product photos for that product — up to the model's reference limit: 1-2 on Nano Banana 2 Lite, a handful on Nano Banana 2, up to 14 on Nano Banana Pro. If the set holds more relevant images than a Lite draft can take, use the strongest 1-2 for drafting and the fuller set on the final rerun. Always tell the user which files went into the call; the sidecar log records them regardless.
 
@@ -108,6 +108,17 @@ Or manually clone into your agent's skills directory:
 git clone https://github.com/AntonioCardenas/generate-nanobanana ~/.claude/skills/generate
 ```
 
+## Updating
+
+"/generate update" — or any ask to update this skill — refreshes the installed copy in place:
+
+1. **Find the install** — the folder this `SKILL.md` was loaded from.
+2. **Refresh it** — if the folder is a git clone (has `.git`), run `git pull` inside it. Otherwise re-run `npx skills add AntonioCardenas/generate-nanobanana`, which re-resolves to the latest and overwrites the install; if that's unavailable, clone the repo to a temp folder and copy `SKILL.md`, `models/`, and the READMEs over the installed files.
+3. **Report what changed** — summarize the recent commit titles or the diff of `SKILL.md` and `models/`, so the user knows what they just got.
+4. **Restart to load it** — the running session keeps the old version; tell the user to restart, same as after a fresh install.
+
+An update touches only the skill's own files. Never touch the workspace's `generations/` folder, reference sets, or `sets.json` — that's the user's data, not the skill's.
+
 ## Authentication
 
 Calls use a Google AI Studio key in the `GEMINI_API_KEY` environment variable. If it's missing:
@@ -116,7 +127,8 @@ Calls use a Google AI Studio key in the `GEMINI_API_KEY` environment variable. I
 
 ## Output
 
-- Save every file flat into `~/generations` — no subfolders. Reference images live in `generations/refs/`, where set folders one level down (and `sets.json`) are the only structure allowed.
+- Save every file flat into the workspace's `generations/` folder — at the root of the project the session is working in, created on first use — no subfolders. The user's images live next to the code that needs them, not off in the home directory. Reference images live in `generations/refs/`, where set folders one level down (and `sets.json`) are the only structure allowed.
+- No workspace to root in (a session running loose outside any project)? Fall back to `~/generations` so files still have one predictable home.
 - Exception: a reference set with an `output` folder configured saves its generations — sidecars included — to that folder instead (e.g. straight into a project's `public/images/`). Never into the refs folder.
 - Naming: `{project}_{description}_{timestamp}.{ext}`
 - One flat folder means any future tool — a gallery page, a script, a plain search — can read the whole library with zero setup. Keep it that way rather than organizing into subfolders later. The flat rule is for outputs; the refs library is the one place with structure.
@@ -133,11 +145,11 @@ Calls use a Google AI Studio key in the `GEMINI_API_KEY` environment variable. I
 
 **Run generations one at a time, not in parallel.** Keeps rate limits and cost/approval tracking accurate — a batch of parallel video calls could blow past an approved budget before anyone notices.
 
-**After every save, write the sidecar log.**
+**Save, verify, then log — in that order.** The generated file must be on disk and non-empty before the sidecar is written; the sidecar is the record that an image exists, so a sidecar without its image is a false log entry. If the API returned no image — only text, an error, a safety block — there is nothing to log: report the failure and the API's text to the user instead of writing anything.
 
 ## Logging
 
-After saving a generated file, write a matching `.json` sidecar with the same base filename next to it (e.g. `hero_thumbnail_1774912000.json` beside `hero_thumbnail_1774912000.png`):
+After saving a generated file — and verifying it's on disk, per the Rules — write a matching `.json` sidecar with the same base filename next to it (e.g. `hero_thumbnail_1774912000.json` beside `hero_thumbnail_1774912000.png`). `model` is the exact model ID sent to the API (`gemini-3.1-flash-lite-image`), never the recipe's nickname (`nano-banana-2-lite`) — the sidecar is what makes a rerun possible, and a rerun needs the real ID:
 
 ```json
 {

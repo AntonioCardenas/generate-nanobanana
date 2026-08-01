@@ -7,7 +7,7 @@
 
 One command that generates images and videos through Google's Gemini media models, never surprises you with a bill, and files every output — with the exact prompt that made it — in one folder.
 
-You say "generate a thumbnail of X." The skill routes the job to the right model (cheap draft, quality final, or video), loads your real reference images instead of describing your logo in words, quotes the cost and waits for your go-ahead before anything expensive runs, saves the result flat into one folder, and writes a small JSON note beside it recording the prompt, model, and cost. Three weeks later, when you look at a file and think "what prompt made THIS?", the answer is sitting right next to it.
+You say "generate a thumbnail of X." The skill routes the job to the right model (cheap draft, quality final, or video), loads your real reference images instead of describing your logo in words, quotes the cost and waits for your go-ahead before anything expensive runs, saves the result flat into a `generations/` folder right in your workspace, and writes a small JSON note beside it recording the prompt, model, seed, and cost. Three weeks later, when you look at a file and think "what prompt made THIS?", the answer is sitting right next to it.
 
 Google-only by design: one API key, one bill, and the newest Gemini features (Nano Banana Pro's multi-image fusion, Omni Flash's synced audio) the day they ship — no aggregator in the middle.
 
@@ -49,6 +49,14 @@ cp -R ~/tools/generate-nanobanana ~/.claude/skills/generate
 
 **Restart your agent session either way.** The file watcher only covers directories that existed when the session started, so a skill installed mid-session won't be picked up until you restart. If the skill seems not to exist, this is why.
 
+**Updating later** is one command — ask the agent:
+
+```
+/generate update
+```
+
+It refreshes the installed copy from this repo (`git pull` for cloned installs, re-running `npx skills add` otherwise), tells you what changed, and never touches your `generations/` folder or reference sets. Restart the session afterward, same as after installing. Re-running the `npx skills add` command yourself works too.
+
 Then just ask:
 
 ```
@@ -60,9 +68,9 @@ The repo is named `generate-nanobanana` so it's findable; the skill itself is na
 ## How a generation flows
 
 1. **Route** — pick the model for the job and read its recipe file before calling anything.
-2. **Load references** — real logos, faces, and style shots from `generations/refs/`, or a whole named set when you say "on brand". A logo described in words comes back wrong every time; the actual pixels don't.
+2. **Load references** — real logos, faces, and style shots from `generations/refs/`, or a whole named set when you say "on brand" or `/ref-gen <set>`. A logo described in words comes back wrong every time; the actual pixels don't.
 3. **Generate** — call the Gemini API per the recipe. Images reply in one call; video is submit-then-poll.
-4. **Log** — write the sidecar JSON next to the saved file.
+4. **Log** — verify the image actually landed on disk, then write the sidecar JSON next to it. No image, no sidecar — a log entry is proof the file exists.
 
 ## Reference sets — "generate on brand"
 
@@ -71,6 +79,7 @@ Register a folder of brand assets once, then pull the whole thing in with one ph
 ```
 /generate link ~/company/brand-assets as brand
 /generate on brand a 16:9 launch banner for the fall sale
+/ref-gen brand a square product card for the same campaign
 ```
 
 Two ways to register a folder:
@@ -82,7 +91,7 @@ Two ways to register a folder:
 
 A set can also carry a `style.md` — a short, fixed description of the set's look (palette, lighting, camera, rendering style). When it exists, its text is prepended **verbatim** to every prompt generated from that set, so a series shares one visual language instead of drifting a little with each rephrasing.
 
-First run with no folder yet? The skill creates `generations/refs/brand/`, tells you where it is, and waits for you to drop images in — it won't fake your brand from a text description. And each set can declare an `output` folder (say, your project's `public/images/`), so on-brand results land where the project needs them instead of the default `~/generations`. References and outputs never mix.
+First run with no folder yet? The skill creates `generations/refs/brand/`, tells you where it is, and waits for you to drop images in — it won't fake your brand from a text description. And each set can declare an `output` folder (say, your project's `public/images/`), so on-brand results land exactly where the project needs them instead of the default workspace `generations/` folder. References and outputs never mix.
 
 ## The guardrails
 
@@ -92,7 +101,7 @@ Almost everything in this skill is a constraint, and the constraints are what ma
 - **Draft cheap, finish pretty.** Iterate on Nano Banana 2 Lite; rerun your favourite on Nano Banana 2, or on Pro when the job needs multi-image fusion or dense on-image text. You stop paying premium prices for throwaway drafts.
 - **Real refs, never described.** If a needed reference image is missing, the skill stops and asks for it instead of approximating your brand from a text description.
 - **Seeded and logged, so it repeats.** Every image call carries an explicit seed, recorded in the sidecar and reported back with each result. "Same image but change the headline" reuses the logged seed and exact prompt and changes only that one thing — instead of re-rolling the whole composition and hoping. Like the look? Say "keep that seed" to pin it for the rest of the session, or save it into a reference set so the whole project keeps generating with it. For series that must match (a character, a product line), the approved first image goes back in as a reference for every image after it.
-- **One flat folder.** Every output lands in `~/generations`, no subfolders. Any gallery, script, or plain folder search can read your whole media library with zero setup.
+- **One flat folder, in your workspace.** Every output lands in a `generations/` folder at the root of the project you're working in, no subfolders — your images live next to the code that uses them, not off in your home directory. Any gallery, script, or plain folder search can read the project's whole media library with zero setup. (Running outside any project? It falls back to `~/generations` so files still have one predictable home.)
 - **A sidecar log beside every file.** Same basename, `.json` extension. That's the whole contract, and it means no prompt is ever lost:
 
 ```json

@@ -6,7 +6,7 @@
 
 Un solo comando que genera imágenes y videos a través de los modelos de medios de Gemini de Google, que nunca te sorprende con una factura inesperada y archiva cada resultado —con el prompt exacto que lo generó— en una sola carpeta.
 
-Tú dices "genera una miniatura de X". La skill redirige el trabajo al modelo correcto (borrador económico, versión final de calidad o video), carga tus imágenes de referencia reales en lugar de describir tu logotipo con palabras, te da una cotización del costo y espera tu aprobación antes de ejecutar cualquier tarea costosa, guarda el resultado directamente en una sola carpeta y escribe una pequeña nota JSON al lado que registra el prompt, el modelo y el costo. Tres semanas después, cuando miras un archivo y piensas "¿qué prompt generó ESTO?", la respuesta estará allí mismo, justo al lado.
+Tú dices "genera una miniatura de X". La skill redirige el trabajo al modelo correcto (borrador económico, versión final de calidad o video), carga tus imágenes de referencia reales en lugar de describir tu logotipo con palabras, te da una cotización del costo y espera tu aprobación antes de ejecutar cualquier tarea costosa, guarda el resultado directamente en una carpeta `generations/` dentro de tu workspace y escribe una pequeña nota JSON al lado que registra el prompt, el modelo, el seed y el costo. Tres semanas después, cuando miras un archivo y piensas "¿qué prompt generó ESTO?", la respuesta estará allí mismo, justo al lado.
 
 Diseñado exclusivamente para Google: una sola clave de API, una sola factura y las características más recientes de Gemini (fusión de múltiples imágenes de Nano Banana Pro, audio sincronizado de Omni Flash) el mismo día de su lanzamiento — sin intermediarios.
 
@@ -48,6 +48,14 @@ cp -R ~/tools/generate-nanobanana ~/.claude/skills/generate
 
 **Reinicia tu sesión del agente en cualquiera de los dos casos.** El detector de cambios de archivos solo cubre los directorios que existían cuando comenzó la sesión, por lo que una skill instalada a mitad de la sesión no se detectará hasta que reinicies. Si parece que la skill no existe, esta es la razón.
 
+**Actualizar después** es un solo comando — pídeselo al agente:
+
+```
+/generate update
+```
+
+Refresca la copia instalada desde este repositorio (`git pull` para instalaciones clonadas, re-ejecutando `npx skills add` en los demás casos), te dice qué cambió y nunca toca tu carpeta `generations/` ni tus conjuntos de referencia. Reinicia la sesión después, igual que tras instalar. Volver a ejecutar el comando `npx skills add` manualmente también funciona.
+
 Luego simplemente pregunta:
 
 ```
@@ -59,9 +67,9 @@ El repositorio se llama `generate-nanobanana` para que sea fácil de encontrar; 
 ## Cómo fluye una generación
 
 1. **Ruteo (Route)** — selecciona el modelo para el trabajo y lee su archivo de receta antes de realizar cualquier llamada.
-2. **Carga de referencias (Load references)** — carga logotipos, rostros y capturas de estilo reales desde `generations/refs/`, o un conjunto completo con nombre cuando dices "on brand". Un logotipo descrito con palabras suele salir mal; los píxeles reales no fallan.
+2. **Carga de referencias (Load references)** — carga logotipos, rostros y capturas de estilo reales desde `generations/refs/`, o un conjunto completo con nombre cuando dices "on brand" o `/ref-gen <conjunto>`. Un logotipo descrito con palabras suele salir mal; los píxeles reales no fallan.
 3. **Generación (Generate)** — llama a la API de Gemini según la receta. Las imágenes responden en una sola llamada; el video requiere un proceso de envío y consulta continua (submit-then-poll).
-4. **Registro (Log)** — escribe el archivo JSON de registro (sidecar) junto al archivo guardado.
+4. **Registro (Log)** — verifica que la imagen realmente llegó al disco y luego escribe el archivo JSON de registro (sidecar) junto a ella. Sin imagen no hay sidecar — una entrada de registro es la prueba de que el archivo existe.
 
 ## Conjuntos de referencia — "generate on brand"
 
@@ -70,6 +78,7 @@ Registra una carpeta de recursos de marca una sola vez, y luego úsala completa 
 ```
 /generate link ~/empresa/recursos-de-marca as brand
 /generate on brand un banner 16:9 para el lanzamiento de la venta de otoño
+/ref-gen brand una tarjeta de producto cuadrada para la misma campaña
 ```
 
 Dos formas de registrar una carpeta:
@@ -81,7 +90,7 @@ Dos formas de registrar una carpeta:
 
 Un conjunto también puede incluir un `style.md` — una descripción corta y fija del estilo visual del conjunto (paleta, iluminación, cámara, estilo de renderizado). Cuando existe, su texto se antepone **literalmente** a cada prompt generado desde ese conjunto, de modo que una serie comparte un solo lenguaje visual en lugar de desviarse un poco con cada reformulación.
 
-¿Primera ejecución sin carpeta todavía? La skill crea `generations/refs/brand/`, te dice dónde está y espera a que agregues imágenes — no inventará tu marca a partir de una descripción de texto. Además, cada conjunto puede declarar una carpeta de salida (`output`, por ejemplo `public/images/` de tu proyecto), para que los resultados "on brand" lleguen a donde el proyecto los necesita en lugar de la carpeta predeterminada `~/generations`. Las referencias y los resultados nunca se mezclan.
+¿Primera ejecución sin carpeta todavía? La skill crea `generations/refs/brand/`, te dice dónde está y espera a que agregues imágenes — no inventará tu marca a partir de una descripción de texto. Además, cada conjunto puede declarar una carpeta de salida (`output`, por ejemplo `public/images/` de tu proyecto), para que los resultados "on brand" lleguen exactamente a donde el proyecto los necesita en lugar de la carpeta `generations/` predeterminada del workspace. Las referencias y los resultados nunca se mezclan.
 
 ## Las reglas y límites (Guardrails)
 
@@ -91,7 +100,7 @@ Casi todo en esta skill es una restricción, y son estas restricciones las que l
 - **Borrador económico, acabado de calidad.** Itera en Nano Banana 2 Lite; vuelve a ejecutar tu favorito en Nano Banana 2, o en Pro cuando el trabajo necesite fusión de múltiples imágenes o texto denso en la imagen. Dejas de pagar precios premium por borradores desechables.
 - **Referencias reales, nunca descritas.** Si falta una imagen de referencia necesaria, la skill se detiene y la solicita en lugar de aproximar tu marca a partir de una descripción de texto.
 - **Con seed y registrado, para que se repita.** Cada llamada de imagen lleva un seed explícito, registrado en el sidecar y comunicado con cada resultado. "La misma imagen pero cambia el titular" reutiliza el seed y el prompt exacto registrados y cambia solo eso — en lugar de volver a sortear toda la composición y cruzar los dedos. ¿Te gustó el estilo? Di "keep that seed" (conserva ese seed) para fijarlo durante el resto de la sesión, o guárdalo en un conjunto de referencia para que todo el proyecto siga generando con él. Para series que deben coincidir entre sí (un personaje, una línea de productos), la primera imagen aprobada vuelve a entrar como referencia en cada imagen posterior.
-- **Una carpeta plana.** Cada archivo generado se guarda directamente en `~/generations`, sin subcarpetas. Cualquier galería, script o búsqueda simple en la carpeta puede leer toda tu biblioteca de medios sin configuración adicional.
+- **Una carpeta plana, en tu workspace.** Cada archivo generado se guarda en una carpeta `generations/` en la raíz del proyecto en el que estás trabajando, sin subcarpetas — tus imágenes viven junto al código que las usa, no perdidas en tu directorio home. Cualquier galería, script o búsqueda simple en la carpeta puede leer toda la biblioteca de medios del proyecto sin configuración adicional. (¿Trabajando fuera de un proyecto? Se usa `~/generations` como respaldo para que los archivos sigan teniendo un hogar predecible.)
 - **Un archivo de registro (sidecar) al lado de cada archivo.** Mismo nombre base, extensión `.json`. Ese es todo el contrato, lo que significa que ningún prompt se pierde:
 
 ```json

@@ -44,7 +44,7 @@ response = client.models.generate_content(
 
 ## Response handling
 
-Same shape as the other image models: walk `response.candidates[0].content.parts`, decode `inline_data` to a file, log any `text` parts as commentary. `response.usage_metadata` carries token counts — image output is billed per token ($60/1M as of mid-2026), so this gives exact cost when the ballpark isn't enough.
+Same shape as Nano Banana 2 Lite — see that recipe for the full save snippet. The short version: find the part with `inline_data`, write its `data` to disk **as-is** (it's already raw bytes — base64-decoding it again corrupts the file), and verify the file exists and is non-empty **before** writing the sidecar. If only `text` parts came back, the generation failed — surface that text to the user, save nothing, log nothing. `response.usage_metadata` carries token counts — image output is billed per token ($60/1M as of mid-2026), so this gives exact cost when the ballpark isn't enough.
 
 ## Notes
 
