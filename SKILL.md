@@ -11,8 +11,9 @@ Calls Google's Gemini media models directly through the Gemini API — no third-
 
 1. **Route** — pick the model for the job (draft image, standard image, quality image, or video) and read its recipe file before calling anything. Recipes hold the exact request shape and any quirks that have shown up since the model shipped.
 2. **Load references** — pull any real reference images (logos, faces, style shots) from `generations/refs/`, or from a named reference set if the request invokes `/ref-gen` or says "from reference" or "on brand" (see Reference library). Never substitute a text description for a reference image that exists.
-3. **Generate** — call the API per the recipe. Images reply synchronously; video is a submit-then-poll operation. Save the result flat into the generations folder.
-4. **Log** — write the sidecar JSON next to the file (see Logging).
+3. **Quote & approve (paid gates)** — for video, and for any batch or non-default resolution: compute the cost from the recipe's price table (video: `$/second × expected seconds × clips` — quote the 10s worst case unless the prompt pins the length), state it, and wait for an explicit yes. Record the quote for the sidecar. Plain single images at default settings pass through without ceremony; the point is that nothing expensive runs on an implied approval.
+4. **Generate** — call the API per the recipe. Images reply synchronously; video is a submit-then-poll operation. Save the result flat into the generations folder.
+5. **Log** — write the sidecar JSON next to the file (see Logging).
 
 ## Models
 
@@ -30,7 +31,7 @@ Rough costs (check the recipe files for current numbers — these move):
 | Draft image (Lite) | $0.03-0.05 |
 | Standard image (Nano Banana 2) | $0.07-0.15 |
 | Quality image (Pro) | $0.13-0.30 |
-| Video, per second | quote from docs — this is what the approval gate is for |
+| Video, per second | $0.10 per second of output video, per the [pricing docs](https://ai.google.dev/gemini-api/docs/pricing) as of 2026-08-01 ($0.30-$1.00 for a 3-10s clip) — re-check the docs when quoting, and this table, the recipe, and the quote must agree |
 
 
 ## Reference library
@@ -123,7 +124,7 @@ Calls use a Google AI Studio key in the `GEMINI_API_KEY` environment variable. I
 
 ## Rules
 
-**Quote cost and wait for explicit go-ahead before any paid video run.** Video is the expensive, hardest-to-undo call in this skill — a quote alone isn't approval, and one approval covers exactly one run. If a rerun is needed, quote and confirm again.
+**Quote cost and wait for explicit go-ahead before any paid video run.** Video is the expensive, hardest-to-undo call in this skill — a quote alone isn't approval, and one approval covers exactly one run. If a rerun is needed, quote and confirm again. The quote is arithmetic, not vibes: `$0.10/s × expected seconds × clips`, from the recipe's price table, quoting the 10s worst case unless the prompt pins the clip length. An approval without a stated dollar number doesn't count — and the quote gets recorded in the sidecar's `approval` block so the audit trail shows what was agreed, not just that something was.
 
 **Draft on Nano Banana 2 Lite first; rerun the picked favorite on Nano Banana 2 or Pro.** This mirrors how the models are priced — Lite for iteration, Nano Banana 2 for most finals, Pro only when the job needs its extras: heavy multi-image fusion, consistent characters across a series, or dense on-image text.
 
@@ -147,10 +148,21 @@ After saving a generated file, write a matching `.json` sidecar with the same ba
   "reference_set": "brand",
   "params": { "aspect_ratio": "16:9", "image_size": "1K", "seed": 481047 },
   "cost": "$0.04",
-  "created": "2026-07-31T14:20:00Z",
-  "approved_by_user": true
+  "created": "2026-07-31T14:20:00Z"
 }
 ```
+
+For gated runs (video, batches, non-default resolution), replace the old self-asserted flag with the evidence of the gate:
+
+```json
+  "approval": {
+    "quoted_cost": "$1.00",
+    "quoted_at": "2026-08-01T18:04:00Z",
+    "approved_text": "yes, run the 10s clip"
+  }
+```
+
+`approved_text` is the user's actual wording, copied from the turn that approved the run — an approval with no matching quote is invalid by definition, which is the property a bare `"approved_by_user": true` (written by the same agent that wants to run the job) never had. Ungated single images simply omit the block.
 
 `params.seed` is required for image generations — it's what makes "same image but change X" possible weeks later. For video it's optional: log it whenever one was passed. `reference_set` names the set the images came from — omit it when references were passed individually. For linked sets, list the resolved absolute paths in `reference_images` so the log stays accurate even if the link later changes.
 
