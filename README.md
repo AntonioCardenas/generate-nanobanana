@@ -21,7 +21,7 @@ Google-only by design: one API key, one bill, and the newest Gemini features (Na
 |---|---|---|---|
 | Image (draft) | Nano Banana 2 Lite | `gemini-3.1-flash-lite-image` | $0.03–0.05 / image |
 | Image (standard) | Nano Banana 2 | `gemini-3.1-flash-image` | $0.07–0.15 / image |
-| Image (quality) | Nano Banana Pro | `gemini-3-pro-image-preview` | $0.13–0.30 / image |
+| Image (quality) | Nano Banana Pro | `gemini-3-pro-image` | $0.13–0.30 / image |
 | Video | Gemini Omni Flash | `gemini-omni-flash-preview` | billed per second — always quoted first |
 
 Each model has its own recipe file in `models/` holding the exact request shape, response handling, and gotchas. When Google ships a better model, you add one markdown file and the skill learns it. Nothing else changes.
@@ -129,7 +129,7 @@ After installing, check that `models/` landed alongside `SKILL.md` in your skill
 
 **It is not multi-provider.** No Kling, no Seedance, no Sora, no fallback routing across aggregators. That's a deliberate trade: one auth path and first-day access to Gemini features, at the cost of model breadth. If you need non-Google models behind one key, look at Higgsfield-style wrappers instead — different tool, different trade.
 
-**The preview model IDs will change.** `gemini-3-pro-image-preview` and `gemini-omni-flash-preview` are preview names. If a call returns "model not found," check the [Gemini API docs](https://ai.google.dev/gemini-api/docs) for the current ID and update the recipe file. That's the only maintenance this system needs.
+**The preview model IDs will change.** `gemini-omni-flash-preview` is a preview name, and Nano Banana Pro's former preview name has already been promoted to the stable `gemini-3-pro-image` (the old alias still resolves today, but the stable name is the one the docs list). If a call returns "model not found," check the [Gemini API docs](https://ai.google.dev/gemini-api/docs) for the current ID and update the recipe file. That's the only maintenance this system needs.
 
 ## License
 

@@ -20,7 +20,7 @@ Calls Google's Gemini media models directly through the Gemini API — no third-
 |---|---|---|---|
 | Image (draft) | Nano Banana 2 Lite | `gemini-3.1-flash-lite-image` | `models/nano-banana-2-lite.md` |
 | Image (standard) | Nano Banana 2 | `gemini-3.1-flash-image` | `models/nano-banana-2.md` |
-| Image (quality) | Nano Banana Pro | `gemini-3-pro-image-preview` | `models/nano-banana-pro.md` |
+| Image (quality) | Nano Banana Pro | `gemini-3-pro-image` | `models/nano-banana-pro.md` |
 | Video | Gemini Omni Flash | `gemini-omni-flash-preview` | `models/gemini-omni-flash.md` |
 
 Rough costs (check the recipe files for current numbers — these move):

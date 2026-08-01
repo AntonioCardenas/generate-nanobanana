@@ -20,7 +20,7 @@ Diseñado exclusivamente para Google: una sola clave de API, una sola factura y 
 |---|---|---|---|
 | Imagen (borrador) | Nano Banana 2 Lite | `gemini-3.1-flash-lite-image` | $0.03–0.05 / imagen |
 | Imagen (estándar) | Nano Banana 2 | `gemini-3.1-flash-image` | $0.07–0.15 / imagen |
-| Imagen (calidad) | Nano Banana Pro | `gemini-3-pro-image-preview` | $0.13–0.30 / imagen |
+| Imagen (calidad) | Nano Banana Pro | `gemini-3-pro-image` | $0.13–0.30 / imagen |
 | Video | Gemini Omni Flash | `gemini-omni-flash-preview` | facturado por segundo — cotizado previamente |
 
 Cada modelo tiene su propio archivo de receta en `models/` que contiene la estructura exacta de la solicitud, el manejo de respuestas y las consideraciones especiales. Cuando Google lanza un mejor modelo, simplemente agregas un archivo markdown y la skill lo aprende. Nada más cambia.
@@ -128,7 +128,7 @@ Después de instalar, verifica que la carpeta `models/` se haya colocado junto a
 
 **No es multiproveedor.** Sin Kling, sin Seedance, sin Sora, sin enrutamiento de respaldo entre agregadores. Esta es una decisión deliberada: una única ruta de autenticación y acceso inmediato a las funciones de Gemini, a costa de la variedad de modelos. Si necesitas modelos que no sean de Google bajo una misma clave, considera usar envoltorios tipo Higgsfield en su lugar — diferente herramienta, diferente decisión.
 
-**Los IDs de modelos en vista previa cambiarán.** `gemini-3-pro-image-preview` y `gemini-omni-flash-preview` son nombres de vista previa. Si una llamada devuelve "model not found" (modelo no encontrado), consulta la [documentación de la API de Gemini](https://ai.google.dev/gemini-api/docs) para obtener el ID actual y actualiza el archivo de receta correspondiente. Ese es el único mantenimiento que requiere este sistema.
+**Los IDs de modelos en vista previa cambiarán.** `gemini-omni-flash-preview` es un nombre de vista previa, y el antiguo nombre de vista previa de Nano Banana Pro ya fue promovido al estable `gemini-3-pro-image` (el alias antiguo todavía resuelve hoy, pero el nombre estable es el que aparece en la documentación). Si una llamada devuelve "model not found" (modelo no encontrado), consulta la [documentación de la API de Gemini](https://ai.google.dev/gemini-api/docs) para obtener el ID actual y actualiza el archivo de receta correspondiente. Ese es el único mantenimiento que requiere este sistema.
 
 ## Licencia
 

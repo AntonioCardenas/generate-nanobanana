@@ -4,7 +4,7 @@ Google's highest-quality image model. Strong at composition with multiple refere
 
 | Field | Value |
 |---|---|
-| Model ID | `gemini-3-pro-image-preview` |
+| Model ID | `gemini-3-pro-image` |
 | Provider | Gemini API (Google AI Studio key) |
 | Method | Sync — one call, one reply |
 | Type | Image |
@@ -29,7 +29,7 @@ for ref_path in reference_images:  # up to 14 supported here
 parts.append(types.Part.from_text(prompt))
 
 response = client.models.generate_content(
-    model="gemini-3-pro-image-preview",
+    model="gemini-3-pro-image",
     contents=[{"role": "user", "parts": parts}],
     config=types.GenerateContentConfig(
         response_modalities=["IMAGE", "TEXT"],
@@ -48,7 +48,7 @@ Same shape as Nano Banana 2 Lite: iterate `response.candidates[0].content.parts`
 
 ## Notes
 
-- This is a preview model — the ID can change when Google promotes it to stable. If a call 404s, check https://ai.google.dev/gemini-api/docs/image-generation for the current ID and update this file.
+- `gemini-3-pro-image` is the stable ID the docs list; the former preview name (`-preview` suffix) still resolves today, but new calls should use the stable one. If a call 404s, check https://ai.google.dev/gemini-api/docs/image-generation for the current ID and update this file.
 - Worth the extra cost specifically for: text-heavy compositions, multi-image fusion, character consistency across a series. For a simple single-subject image, Lite is usually good enough — don't upgrade by default.
 - This is the series tier. For images that must match each other (a character across scenes, a product line, episode covers), pass the approved first image of the series as one of the references in every subsequent call — refs anchor consistency far harder than a repeated description does.
 - Seed repeatability is best-effort: same seed + prompt + refs + config lands very close, not guaranteed pixel-identical. Hold `image_size` and `aspect_ratio` fixed across reruns — changing either re-rolls the composition regardless of seed.
