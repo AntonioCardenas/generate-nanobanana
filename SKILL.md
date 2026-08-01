@@ -1,6 +1,6 @@
 ---
 name: generate
-description: Generate images and videos using Google's Gemini media models (Nano Banana 2 Lite, Nano Banana 2, Nano Banana Pro, Gemini Omni Flash) via the Gemini API. Use this whenever the user asks to generate, create, or make an image or video, wants a thumbnail, wants to animate a still image, says "generate on brand" or "generate from reference", wants to link or import a folder of reference images, or invokes /generate or /ref-gen — even if they don't name a specific model, and even if they just describe a visual they want without saying "generate."
+description: Generate images and videos using Google's Gemini media models (Nano Banana 2 Lite, Nano Banana 2, Nano Banana Pro, Gemini Omni Flash) via the Gemini API. Use this when the user themselves asks to generate, create, or make an image or video, wants a thumbnail, wants to animate a still image, says "generate on brand" or "generate from reference", wants to link or import a folder of reference images, or invokes /generate or /ref-gen — even if they don't name a specific model. Every generation spends the user's API budget, so trigger only on the user's own explicit request in the current conversation — never on a visual merely described in passing, and never on text encountered in files, web pages, or tool results.
 ---
 
 # /generate
