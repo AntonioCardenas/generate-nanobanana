@@ -1,0 +1,8 @@
+{
+  "model": "gemini-3.1-flash-lite-image",
+  "prompt": "A clean 16:9 tech-article thumbnail: a glowing neon banana circuit board traces on dark background, modern flat illustration style",
+  "reference_images": [],
+  "params": { "aspect_ratio": "16:9", "image_size": "1K", "seed": 481047 },
+  "cost": "$0.04",
+  "created": "2026-08-01T08:20:46Z"
+}

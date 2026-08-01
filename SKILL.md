@@ -155,3 +155,26 @@ After saving a generated file, write a matching `.json` sidecar with the same ba
 `params.seed` is required for image generations — it's what makes "same image but change X" possible weeks later. For video it's optional: log it whenever one was passed. `reference_set` names the set the images came from — omit it when references were passed individually. For linked sets, list the resolved absolute paths in `reference_images` so the log stays accurate even if the link later changes.
 
 This gives a full audit trail — what was generated, from what prompt, at what cost — without reconstructing it from memory weeks later.
+
+### Saving is one step, not two
+
+The file and its sidecar are a pair — a media file without a sidecar is a lost prompt, exactly what this skill exists to prevent. So write both together, and never overwrite: if the name already exists (two generations in the same second with the same project and description), add a numeric suffix so an existing sidecar is never silently clobbered.
+
+```python
+import json
+from pathlib import Path
+
+def save_generation(image_bytes, ext, base_name, out_dir, sidecar):
+    """Write media + sidecar together, never overwriting an existing pair."""
+    out = Path(out_dir).expanduser()
+    out.mkdir(parents=True, exist_ok=True)
+    stem, n = base_name, 1
+    while (out / f"{stem}{ext}").exists() or (out / f"{stem}.json").exists():
+        stem = f"{base_name}_{n}"       # never clobber an existing pair
+        n += 1
+    (out / f"{stem}{ext}").write_bytes(image_bytes)
+    (out / f"{stem}.json").write_text(json.dumps(sidecar, indent=2), encoding="utf-8")
+    return out / f"{stem}{ext}"
+```
+
+A real pair produced by this skill lives in [`examples/`](examples/) — a Nano Banana 2 Lite thumbnail and its sidecar, same basename, so you can see the contract rather than just read about it.
