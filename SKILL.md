@@ -91,7 +91,7 @@ Two different jobs hide under "make it again": re-running one image, and keeping
 
 This skill works across multiple AI agents and CLI tools:
 - **Antigravity**: Supports direct Python API execution with `GEMINI_API_KEY` or native `generate_image` tool fallback for instant zero-key image previews.
-- **Gemini CLI**: Invoke via `gemini-cli` or shell integration (`gemini generate`).
+- **Antigravity CLI**: Invoke via the `agy` binary (e.g. `agy generate`). Migrating from the retired Gemini CLI? Import your existing config/extensions with `agy plugin import gemini`.
 - **Claude Code, Cursor, Codex, OpenCode**: Compatible with any agent reading `.agents/skills` or standard `SKILL.md` definitions.
 
 ## Installation
