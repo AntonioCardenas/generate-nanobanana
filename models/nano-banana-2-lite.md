@@ -33,6 +33,7 @@ response = client.models.generate_content(
     contents=[{"role": "user", "parts": parts}],
     config=types.GenerateContentConfig(
         response_modalities=["IMAGE", "TEXT"],
+        seed=seed,                 # always set one — random int if the user doesn't care — and log it in the sidecar
         image_config=types.ImageConfig(
             image_size="1K",       # 512 | 1K | 2K | 4K
             aspect_ratio="16:9",   # 1:1, 16:9, 9:16, 4:3, 3:4, 21:9, etc.
@@ -47,5 +48,7 @@ Walk `response.candidates[0].content.parts`. Each part is either `inline_data` (
 
 ## Notes
 
+- Seed repeatability is best-effort: same seed + same prompt + same refs + same config lands very close to the same image, not guaranteed pixel-identical. Changing `image_size` or `aspect_ratio` re-rolls the composition regardless of seed — hold those fixed when iterating on a draft the user liked.
+- A seed picked here does not transfer to Nano Banana 2 or Pro. When promoting a picked draft, pass the draft image itself as a reference in the final call (see SKILL.md, Determinism & coherence).
 - Rate limits are generous on this tier but still real — one request at a time per the skill's Rules section, not parallel batches.
-- If a request needs on-image text (signage, packaging, readable UI copy), this model is weaker at it than Nano Banana Pro — flag that to the user rather than silently producing garbled text.
+- If a request needs on-image text (signage, packaging, readable UI copy), this model is weaker at it than Nano Banana 2 or Pro — flag that to the user rather than silently producing garbled text.

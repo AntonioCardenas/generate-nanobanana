@@ -33,6 +33,7 @@ response = client.models.generate_content(
     contents=[{"role": "user", "parts": parts}],
     config=types.GenerateContentConfig(
         response_modalities=["IMAGE", "TEXT"],
+        seed=seed,                 # always set one — random int if the user doesn't care — and log it in the sidecar
         image_config=types.ImageConfig(
             image_size="2K",       # 1K | 2K | 4K
             aspect_ratio="16:9",
@@ -49,3 +50,5 @@ Same shape as Nano Banana 2 Lite: iterate `response.candidates[0].content.parts`
 
 - This is a preview model — the ID can change when Google promotes it to stable. If a call 404s, check https://ai.google.dev/gemini-api/docs/image-generation for the current ID and update this file.
 - Worth the extra cost specifically for: text-heavy compositions, multi-image fusion, character consistency across a series. For a simple single-subject image, Lite is usually good enough — don't upgrade by default.
+- This is the series tier. For images that must match each other (a character across scenes, a product line, episode covers), pass the approved first image of the series as one of the references in every subsequent call — refs anchor consistency far harder than a repeated description does.
+- Seed repeatability is best-effort: same seed + prompt + refs + config lands very close, not guaranteed pixel-identical. Hold `image_size` and `aspect_ratio` fixed across reruns — changing either re-rolls the composition regardless of seed.

@@ -31,6 +31,7 @@ operation = client.models.generate_videos(
         number_of_videos=1,
         duration_seconds=10,   # max 10s on this model
         generate_audio=True,
+        seed=seed,             # optional — pass the user's pinned/chosen seed if they have one; omit otherwise
     ),
 )
 
@@ -51,3 +52,5 @@ video.video.save(output_path)  # or write video.video.video_bytes to disk manual
 
 - This is a preview model name and the API surface for it may still be settling — before relying on this recipe for a real (paid) run, do a quick check against the current docs, since Google shipped this to the developer API only recently.
 - Because this is async and billed per second, this is exactly the model the skill's "quote cost, wait for approval" rule is guarding. Never fire this off speculatively.
+- To keep a clip visually on-model with approved stills, pass the approved image as the `image=` input rather than re-describing the scene in text — the still anchors palette, character, and framing; a text-only prompt re-rolls the look.
+- Seed on video is the weakest of the coherence levers — best-effort like on the image models, and this preview API surface is still settling, so confirm the current docs accept it before a paid run and drop it if the call rejects it. The still-image input is what actually holds the look. When a seed was passed, log it in the sidecar's `params` like any image run.

@@ -2,7 +2,7 @@
 
 *Leer en otros idiomas: [English](README.md), [Español](README.es.md).*
 
-> Skill para la generación de imágenes y videos con IA usando Google Gemini (Nano Banana 2 Lite, Nano Banana Pro, Gemini Omni Flash). Compatible con **Antigravity**, **Gemini CLI**, **Claude Code**, **Cursor** y otros entornos de agentes. Control de costos antes de ejecuciones de pago, imágenes de referencia reales y un registro de prompts al lado de cada archivo.
+> Skill para la generación de imágenes y videos con IA usando Google Gemini (Nano Banana 2 Lite, Nano Banana 2, Nano Banana Pro, Gemini Omni Flash). Compatible con **Antigravity**, **Gemini CLI**, **Claude Code**, **Cursor** y otros entornos de agentes. Control de costos antes de ejecuciones de pago, imágenes de referencia reales y un registro de prompts al lado de cada archivo.
 
 Un solo comando que genera imágenes y videos a través de los modelos de medios de Gemini de Google, que nunca te sorprende con una factura inesperada y archiva cada resultado —con el prompt exacto que lo generó— en una sola carpeta.
 
@@ -19,6 +19,7 @@ Diseñado exclusivamente para Google: una sola clave de API, una sola factura y 
 | Tarea | Modelo | ID del Modelo | Costo Estimado |
 |---|---|---|---|
 | Imagen (borrador) | Nano Banana 2 Lite | `gemini-3.1-flash-lite-image` | $0.03–0.05 / imagen |
+| Imagen (estándar) | Nano Banana 2 | `gemini-3.1-flash-image` | $0.07–0.15 / imagen |
 | Imagen (calidad) | Nano Banana Pro | `gemini-3-pro-image-preview` | $0.13–0.30 / imagen |
 | Video | Gemini Omni Flash | `gemini-omni-flash-preview` | facturado por segundo — cotizado previamente |
 
@@ -58,17 +59,38 @@ El repositorio se llama `generate-nanobanana` para que sea fácil de encontrar; 
 ## Cómo fluye una generación
 
 1. **Ruteo (Route)** — selecciona el modelo para el trabajo y lee su archivo de receta antes de realizar cualquier llamada.
-2. **Carga de referencias (Load references)** — carga logotipos, rostros y capturas de estilo reales desde `generations/refs/`. Un logotipo descrito con palabras suele salir mal; los píxeles reales no fallan.
+2. **Carga de referencias (Load references)** — carga logotipos, rostros y capturas de estilo reales desde `generations/refs/`, o un conjunto completo con nombre cuando dices "on brand". Un logotipo descrito con palabras suele salir mal; los píxeles reales no fallan.
 3. **Generación (Generate)** — llama a la API de Gemini según la receta. Las imágenes responden en una sola llamada; el video requiere un proceso de envío y consulta continua (submit-then-poll).
 4. **Registro (Log)** — escribe el archivo JSON de registro (sidecar) junto al archivo guardado.
+
+## Conjuntos de referencia — "generate on brand"
+
+Registra una carpeta de recursos de marca una sola vez, y luego úsala completa con una sola frase:
+
+```
+/generate link ~/empresa/recursos-de-marca as brand
+/generate on brand un banner 16:9 para el lanzamiento de la venta de otoño
+```
+
+Dos formas de registrar una carpeta:
+
+- **Vincular (link)** — registra la ruta de la carpeta en `generations/refs/sets.json`. Las imágenes se leen en vivo desde donde ya están, por lo que los nuevos recursos aparecen sin volver a registrar nada.
+- **Importar (import)** — copia las imágenes a `generations/refs/<nombre>/` como una instantánea estable que sobrevive si la carpeta original se mueve.
+
+`on brand` es el atajo para el conjunto llamado `brand`; cualquier otro conjunto funciona con `/ref-gen <conjunto> …` (una ruta de carpeta directa también funciona, y la forma hablada "generate from reference `<conjunto>`" se enruta igual). La skill selecciona las imágenes relevantes para el trabajo en lugar de enviar la carpeta completa — hasta el límite de referencias de cada modelo (2 en Lite, 14 en Pro) — y el JSON de registro (sidecar) documenta exactamente qué archivos se enviaron.
+
+Un conjunto también puede incluir un `style.md` — una descripción corta y fija del estilo visual del conjunto (paleta, iluminación, cámara, estilo de renderizado). Cuando existe, su texto se antepone **literalmente** a cada prompt generado desde ese conjunto, de modo que una serie comparte un solo lenguaje visual en lugar de desviarse un poco con cada reformulación.
+
+¿Primera ejecución sin carpeta todavía? La skill crea `generations/refs/brand/`, te dice dónde está y espera a que agregues imágenes — no inventará tu marca a partir de una descripción de texto. Además, cada conjunto puede declarar una carpeta de salida (`output`, por ejemplo `public/images/` de tu proyecto), para que los resultados "on brand" lleguen a donde el proyecto los necesita en lugar de la carpeta predeterminada `~/generations`. Las referencias y los resultados nunca se mezclan.
 
 ## Las reglas y límites (Guardrails)
 
 Casi todo en esta skill es una restricción, y son estas restricciones las que la hacen útil en el día a día en lugar de limitarla:
 
 - **Cotización antes de video.** El video es el flujo más costoso. La skill indica el modelo, la duración y los dólares esperados, y luego espera un consentimiento explícito. Una aprobación cubre exactamente una ejecución.
-- **Borrador económico, acabado de calidad.** Itera en Nano Banana 2 Lite; solo vuelve a ejecutar en Pro una vez que hayas elegido tu borrador favorito. Dejas de pagar precios premium por borradores desechables.
+- **Borrador económico, acabado de calidad.** Itera en Nano Banana 2 Lite; vuelve a ejecutar tu favorito en Nano Banana 2, o en Pro cuando el trabajo necesite fusión de múltiples imágenes o texto denso en la imagen. Dejas de pagar precios premium por borradores desechables.
 - **Referencias reales, nunca descritas.** Si falta una imagen de referencia necesaria, la skill se detiene y la solicita en lugar de aproximar tu marca a partir de una descripción de texto.
+- **Con seed y registrado, para que se repita.** Cada llamada de imagen lleva un seed explícito, registrado en el sidecar y comunicado con cada resultado. "La misma imagen pero cambia el titular" reutiliza el seed y el prompt exacto registrados y cambia solo eso — en lugar de volver a sortear toda la composición y cruzar los dedos. ¿Te gustó el estilo? Di "keep that seed" (conserva ese seed) para fijarlo durante el resto de la sesión, o guárdalo en un conjunto de referencia para que todo el proyecto siga generando con él. Para series que deben coincidir entre sí (un personaje, una línea de productos), la primera imagen aprobada vuelve a entrar como referencia en cada imagen posterior.
 - **Una carpeta plana.** Cada archivo generado se guarda directamente en `~/generations`, sin subcarpetas. Cualquier galería, script o búsqueda simple en la carpeta puede leer toda tu biblioteca de medios sin configuración adicional.
 - **Un archivo de registro (sidecar) al lado de cada archivo.** Mismo nombre base, extensión `.json`. Ese es todo el contrato, lo que significa que ningún prompt se pierde:
 
@@ -76,8 +98,9 @@ Casi todo en esta skill es una restricción, y son estas restricciones las que l
 {
   "model": "gemini-3.1-flash-lite-image",
   "prompt": "el prompt exacto enviado",
-  "reference_images": ["generations/refs/logo.png"],
-  "params": { "aspect_ratio": "16:9", "image_size": "1K" },
+  "reference_images": ["generations/refs/brand/logo_dark.png"],
+  "reference_set": "brand",
+  "params": { "aspect_ratio": "16:9", "image_size": "1K", "seed": 481047 },
   "cost": "$0.04",
   "created": "2026-07-31T14:20:00Z",
   "approved_by_user": true
@@ -90,6 +113,7 @@ Casi todo en esta skill es una restricción, y son estas restricciones las que l
 SKILL.md                          el cerebro: tabla de ruteo, reglas, contrato de registro
 models/
   nano-banana-2-lite.md           receta de borrador de imagen — síncrono, económico, predeterminado
+  nano-banana-2.md                receta de imagen estándar — el nivel generalista para versiones finales
   nano-banana-pro.md              receta de imagen de calidad — hasta 14 imágenes de referencia
   gemini-omni-flash.md            receta de video — asíncrono (submit-then-poll), audio sincronizado
 ```
