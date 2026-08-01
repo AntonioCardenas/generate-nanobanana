@@ -26,7 +26,7 @@ for ref_path in reference_images:  # 0-2 images, keep it light on this model
         data=open(ref_path, "rb").read(),
         mime_type="image/png",
     ))
-parts.append(types.Part.from_text(prompt))
+parts.append(types.Part.from_text(text=prompt))
 
 response = client.models.generate_content(
     model="gemini-3.1-flash-lite-image",

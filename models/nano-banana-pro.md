@@ -26,7 +26,7 @@ for ref_path in reference_images:  # up to 14 supported here
         data=open(ref_path, "rb").read(),
         mime_type="image/png",
     ))
-parts.append(types.Part.from_text(prompt))
+parts.append(types.Part.from_text(text=prompt))
 
 response = client.models.generate_content(
     model="gemini-3-pro-image-preview",
