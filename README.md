@@ -60,7 +60,7 @@ The repo is named `generate-nanobanana` so it's findable; the skill itself is na
 ## How a generation flows
 
 1. **Route** — pick the model for the job and read its recipe file before calling anything.
-2. **Load references** — real logos, faces, and style shots from `generations/refs/`, or a whole named set when you say "on brand". A logo described in words comes back wrong every time; the actual pixels don't.
+2. **Load references** — real logos, faces, and style shots from `~/generations/refs/`, or a whole named set when you say "on brand". A logo described in words comes back wrong every time; the actual pixels don't.
 3. **Generate** — call the Gemini API per the recipe. Images reply in one call; video is submit-then-poll.
 4. **Log** — write the sidecar JSON next to the saved file.
 
@@ -75,14 +75,14 @@ Register a folder of brand assets once, then pull the whole thing in with one ph
 
 Two ways to register a folder:
 
-- **Link** — records the folder's path in `generations/refs/sets.json`. Images are read live from where they already live, so new assets show up without re-registering.
-- **Import** — copies the images into `generations/refs/<name>/` for a stable snapshot that survives the original folder moving.
+- **Link** — records the folder's path in `~/generations/refs/sets.json`. Images are read live from where they already live, so new assets show up without re-registering.
+- **Import** — copies the images into `~/generations/refs/<name>/` for a stable snapshot that survives the original folder moving.
 
 `on brand` is shorthand for the set named `brand`; any other set works via `/ref-gen <set> …` (a raw folder path works there too, and the spoken form "generate from reference `<set>`" still routes the same). The skill picks the images relevant to the job rather than dumping the whole folder — up to each model's reference limit (2 on Lite, 14 on Pro) — and the sidecar JSON records exactly which files were sent.
 
 A set can also carry a `style.md` — a short, fixed description of the set's look (palette, lighting, camera, rendering style). When it exists, its text is prepended **verbatim** to every prompt generated from that set, so a series shares one visual language instead of drifting a little with each rephrasing.
 
-First run with no folder yet? The skill creates `generations/refs/brand/`, tells you where it is, and waits for you to drop images in — it won't fake your brand from a text description. And each set can declare an `output` folder (say, your project's `public/images/`), so on-brand results land where the project needs them instead of the default `~/generations`. References and outputs never mix.
+First run with no folder yet? The skill creates `~/generations/refs/brand/`, tells you where it is, and waits for you to drop images in — it won't fake your brand from a text description. And each set can declare an `output` folder (say, your project's `public/images/`), so on-brand results land where the project needs them instead of the default `~/generations`. References and outputs never mix.
 
 ## The guardrails
 
@@ -99,7 +99,7 @@ Almost everything in this skill is a constraint, and the constraints are what ma
 {
   "model": "gemini-3.1-flash-lite-image",
   "prompt": "the exact prompt sent",
-  "reference_images": ["generations/refs/brand/logo_dark.png"],
+  "reference_images": ["~/generations/refs/brand/logo_dark.png"],
   "reference_set": "brand",
   "params": { "aspect_ratio": "16:9", "image_size": "1K", "seed": 481047 },
   "cost": "$0.04",

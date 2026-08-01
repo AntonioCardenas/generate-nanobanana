@@ -59,7 +59,7 @@ El repositorio se llama `generate-nanobanana` para que sea fácil de encontrar; 
 ## Cómo fluye una generación
 
 1. **Ruteo (Route)** — selecciona el modelo para el trabajo y lee su archivo de receta antes de realizar cualquier llamada.
-2. **Carga de referencias (Load references)** — carga logotipos, rostros y capturas de estilo reales desde `generations/refs/`, o un conjunto completo con nombre cuando dices "on brand". Un logotipo descrito con palabras suele salir mal; los píxeles reales no fallan.
+2. **Carga de referencias (Load references)** — carga logotipos, rostros y capturas de estilo reales desde `~/generations/refs/`, o un conjunto completo con nombre cuando dices "on brand". Un logotipo descrito con palabras suele salir mal; los píxeles reales no fallan.
 3. **Generación (Generate)** — llama a la API de Gemini según la receta. Las imágenes responden en una sola llamada; el video requiere un proceso de envío y consulta continua (submit-then-poll).
 4. **Registro (Log)** — escribe el archivo JSON de registro (sidecar) junto al archivo guardado.
 
@@ -74,14 +74,14 @@ Registra una carpeta de recursos de marca una sola vez, y luego úsala completa 
 
 Dos formas de registrar una carpeta:
 
-- **Vincular (link)** — registra la ruta de la carpeta en `generations/refs/sets.json`. Las imágenes se leen en vivo desde donde ya están, por lo que los nuevos recursos aparecen sin volver a registrar nada.
-- **Importar (import)** — copia las imágenes a `generations/refs/<nombre>/` como una instantánea estable que sobrevive si la carpeta original se mueve.
+- **Vincular (link)** — registra la ruta de la carpeta en `~/generations/refs/sets.json`. Las imágenes se leen en vivo desde donde ya están, por lo que los nuevos recursos aparecen sin volver a registrar nada.
+- **Importar (import)** — copia las imágenes a `~/generations/refs/<nombre>/` como una instantánea estable que sobrevive si la carpeta original se mueve.
 
 `on brand` es el atajo para el conjunto llamado `brand`; cualquier otro conjunto funciona con `/ref-gen <conjunto> …` (una ruta de carpeta directa también funciona, y la forma hablada "generate from reference `<conjunto>`" se enruta igual). La skill selecciona las imágenes relevantes para el trabajo en lugar de enviar la carpeta completa — hasta el límite de referencias de cada modelo (2 en Lite, 14 en Pro) — y el JSON de registro (sidecar) documenta exactamente qué archivos se enviaron.
 
 Un conjunto también puede incluir un `style.md` — una descripción corta y fija del estilo visual del conjunto (paleta, iluminación, cámara, estilo de renderizado). Cuando existe, su texto se antepone **literalmente** a cada prompt generado desde ese conjunto, de modo que una serie comparte un solo lenguaje visual en lugar de desviarse un poco con cada reformulación.
 
-¿Primera ejecución sin carpeta todavía? La skill crea `generations/refs/brand/`, te dice dónde está y espera a que agregues imágenes — no inventará tu marca a partir de una descripción de texto. Además, cada conjunto puede declarar una carpeta de salida (`output`, por ejemplo `public/images/` de tu proyecto), para que los resultados "on brand" lleguen a donde el proyecto los necesita en lugar de la carpeta predeterminada `~/generations`. Las referencias y los resultados nunca se mezclan.
+¿Primera ejecución sin carpeta todavía? La skill crea `~/generations/refs/brand/`, te dice dónde está y espera a que agregues imágenes — no inventará tu marca a partir de una descripción de texto. Además, cada conjunto puede declarar una carpeta de salida (`output`, por ejemplo `public/images/` de tu proyecto), para que los resultados "on brand" lleguen a donde el proyecto los necesita en lugar de la carpeta predeterminada `~/generations`. Las referencias y los resultados nunca se mezclan.
 
 ## Las reglas y límites (Guardrails)
 
@@ -98,7 +98,7 @@ Casi todo en esta skill es una restricción, y son estas restricciones las que l
 {
   "model": "gemini-3.1-flash-lite-image",
   "prompt": "el prompt exacto enviado",
-  "reference_images": ["generations/refs/brand/logo_dark.png"],
+  "reference_images": ["~/generations/refs/brand/logo_dark.png"],
   "reference_set": "brand",
   "params": { "aspect_ratio": "16:9", "image_size": "1K", "seed": 481047 },
   "cost": "$0.04",

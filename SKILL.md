@@ -10,7 +10,7 @@ Calls Google's Gemini media models directly through the Gemini API — no third-
 ## How a generation flows
 
 1. **Route** — pick the model for the job (draft image, standard image, quality image, or video) and read its recipe file before calling anything. Recipes hold the exact request shape and any quirks that have shown up since the model shipped.
-2. **Load references** — pull any real reference images (logos, faces, style shots) from `generations/refs/`, or from a named reference set if the request invokes `/ref-gen` or says "from reference" or "on brand" (see Reference library). Never substitute a text description for a reference image that exists.
+2. **Load references** — pull any real reference images (logos, faces, style shots) from `~/generations/refs/`, or from a named reference set if the request invokes `/ref-gen` or says "from reference" or "on brand" (see Reference library). Paths handed to a recipe are relative to `~/generations/refs/`, or absolute when they come from a linked set. Never substitute a text description for a reference image that exists.
 3. **Generate** — call the API per the recipe. Images reply synchronously; video is a submit-then-poll operation. Save the result flat into the generations folder.
 4. **Log** — write the sidecar JSON next to the file (see Logging).
 
@@ -35,12 +35,12 @@ Rough costs (check the recipe files for current numbers — these move):
 
 ## Reference library
 
-Loose files in `generations/refs/` work as always. On top of that, a folder one level down is a **named reference set** — the images for one brand, product, or recurring character, grouped so the user can pull them all in with one phrase.
+Loose files in `~/generations/refs/` work as always. On top of that, a folder one level down is a **named reference set** — the images for one brand, product, or recurring character, grouped so the user can pull them all in with one phrase.
 
 A user registers a folder in one of two ways:
 
-- **Import (copy)** — "import ~/company/brand-assets as brand": copy the image files into `generations/refs/brand/`. A snapshot — it survives the original folder being moved or edited.
-- **Link (live)** — "link ~/company/brand-assets as brand": don't copy anything; record the path in `generations/refs/sets.json`. The folder is read fresh at generation time, so new assets show up without re-importing.
+- **Import (copy)** — "import ~/company/brand-assets as brand": copy the image files into `~/generations/refs/brand/`. A snapshot — it survives the original folder being moved or edited.
+- **Link (live)** — "link ~/company/brand-assets as brand": don't copy anything; record the path in `~/generations/refs/sets.json`. The folder is read fresh at generation time, so new assets show up without re-importing.
 
 `sets.json` maps set names to linked folders:
 
@@ -58,9 +58,9 @@ A user registers a folder in one of two ways:
 
 `output` is optional — see "Where the output lands" below. `seed` is optional too — a pinned seed the user saved for this set, used for every generation from it (see Determinism & coherence). Imported sets can carry the same settings in a `set.json` inside their folder.
 
-If the user doesn't name the set, default to the folder's own name. To resolve a set name at generation time, check `generations/refs/<name>/` first, then `sets.json`. If a linked path no longer exists, stop and ask — same rule as any missing reference, never approximate. After registering a set, list back the images found so the user can confirm the right folder came in.
+If the user doesn't name the set, default to the folder's own name. To resolve a set name at generation time, check `~/generations/refs/<name>/` first, then `sets.json`. If a linked path no longer exists, stop and ask — same rule as any missing reference, never approximate. After registering a set, list back the images found so the user can confirm the right folder came in.
 
-**Bootstrap — the set doesn't exist yet.** When a ref-based request names a set that isn't there (including the very first "on brand"), create the folder (`generations/refs/<name>/`), tell the user its full path and that images dropped there will be used as references from now on, and stop. Never generate from an empty set — "on brand" with zero real brand pixels is exactly the text-description approximation the Rules forbid. Once the folder has at least one image, generation proceeds normally.
+**Bootstrap — the set doesn't exist yet.** When a ref-based request names a set that isn't there (including the very first "on brand"), create the folder (`~/generations/refs/<name>/`), tell the user its full path and that images dropped there will be used as references from now on, and stop. Never generate from an empty set — "on brand" with zero real brand pixels is exactly the text-description approximation the Rules forbid. Once the folder has at least one image, generation proceeds normally.
 
 ### Generating from a set
 
@@ -83,7 +83,7 @@ Two different jobs hide under "make it again": re-running one image, and keeping
 
 **Seeds don't survive a model switch.** Promoting a picked Lite draft to Nano Banana 2 or Pro re-rolls no matter what. The coherence lever there is the draft itself: pass the picked draft image as a reference alongside the original prompt, so the final is anchored to approved pixels rather than to a fresh roll of the same words.
 
-**Style anchors for sets.** A reference set may carry a `style.md` — in `generations/refs/<name>/` for imported sets, in the linked folder for linked sets — holding a short, fixed description of the set's look: palette, lighting, camera, rendering style. When present, prepend its contents to the prompt **verbatim** on every generation from that set. Don't paraphrase it; the whole point is that the same words hit the model every time. The sidecar's `prompt` field records the full assembled prompt, style block included. (`style.md` is a text anchor, never a reference image — don't try to send it as one.)
+**Style anchors for sets.** A reference set may carry a `style.md` — in `~/generations/refs/<name>/` for imported sets, in the linked folder for linked sets — holding a short, fixed description of the set's look: palette, lighting, camera, rendering style. When present, prepend its contents to the prompt **verbatim** on every generation from that set. Don't paraphrase it; the whole point is that the same words hit the model every time. The sidecar's `prompt` field records the full assembled prompt, style block included. (`style.md` is a text anchor, never a reference image — don't try to send it as one.)
 
 **Series lock.** For a run of images that must match each other — a character across scenes, a product line, episode covers — generate the first, get the user's approval on it, then pass that approved image as a reference into every subsequent call, on top of the set's refs and style block. Character-consistency series belong on Nano Banana Pro.
 
@@ -116,7 +116,7 @@ Calls use a Google AI Studio key in the `GEMINI_API_KEY` environment variable. I
 
 ## Output
 
-- Save every file flat into `~/generations` — no subfolders. Reference images live in `generations/refs/`, where set folders one level down (and `sets.json`) are the only structure allowed.
+- Save every file flat into `~/generations` — no subfolders. Reference images live in `~/generations/refs/`, where set folders one level down (and `sets.json`) are the only structure allowed.
 - Exception: a reference set with an `output` folder configured saves its generations — sidecars included — to that folder instead (e.g. straight into a project's `public/images/`). Never into the refs folder.
 - Naming: `{project}_{description}_{timestamp}.{ext}`
 - One flat folder means any future tool — a gallery page, a script, a plain search — can read the whole library with zero setup. Keep it that way rather than organizing into subfolders later. The flat rule is for outputs; the refs library is the one place with structure.
@@ -143,7 +143,7 @@ After saving a generated file, write a matching `.json` sidecar with the same ba
 {
   "model": "gemini-3.1-flash-lite-image",
   "prompt": "the exact prompt sent",
-  "reference_images": ["generations/refs/brand/logo_dark.png"],
+  "reference_images": ["~/generations/refs/brand/logo_dark.png"],
   "reference_set": "brand",
   "params": { "aspect_ratio": "16:9", "image_size": "1K", "seed": 481047 },
   "cost": "$0.04",
