@@ -1,56 +1,60 @@
 # Gemini Omni Flash
 
-Google's cost-efficient video model — up to 10 seconds of 720p video with synchronized audio per clip, and it can take image or video (not just text) as input for conversational editing. This is the video default; there's no separate "quality" video tier wired into this skill yet — if a job needs 1080p/4K or longer clips, that's Veo territory and out of scope until a `veo.md` recipe is added.
+Google's cost-efficient video model — up to 10 seconds of 720p video at 24 fps with synchronized audio per clip, and it can take image or video (not just text) as input for conversational editing. This is the video default; there's no separate "quality" video tier wired into this skill yet — if a job needs 1080p/4K or longer clips, that's Veo territory and out of scope until a `veo.md` recipe is added.
 
 | Field | Value |
 |---|---|
 | Model ID | `gemini-omni-flash-preview` |
 | Provider | Gemini API (Google AI Studio key) |
-| Method | **Async** — submit, then poll |
-| Type | Video |
+| Method | **Interactions API** — one blocking call, typically 30-90s; poll only if it returns still running |
+| Type | Video, with native synchronized audio (no flag to pass) |
 | API key | `GEMINI_API_KEY` env var |
-| Docs | https://ai.google.dev/gemini-api/docs/video (check for the Omni Flash section specifically, it's a newer addition) |
-| Cost | Quote per-second pricing from the docs before running — this is the model the cost-approval gate exists for |
+| Docs | https://ai.google.dev/gemini-api/docs/omni |
+| Cost | $0.10 per second of output video ($0.30-$1.00 for 3-10s clips), from the pricing docs as of 2026-08-01 — re-quote before every paid run |
 
 ## Request (Python, `google-genai` SDK)
 
-Video generation on Gemini follows the same long-running-operation pattern as Veo: submit the job, then poll until done.
+Omni Flash runs on the Interactions API, not the Veo-style `generate_videos` long-running operation (see Notes for what happens if you try that). One call does the whole job:
 
 ```python
+import base64
 import time
-from google import genai
-from google.genai import types
 
-client = genai.Client()
+import google.genai as genai
 
-operation = client.models.generate_videos(
+client = genai.Client()  # reads GEMINI_API_KEY from env
+
+interaction = client.interactions.create(
     model="gemini-omni-flash-preview",
-    prompt=prompt,
-    image=types.Image.from_file(image_path) if image_path else None,
-    config=types.GenerateVideosConfig(
-        number_of_videos=1,
-        duration_seconds=10,   # max 10s on this model
-        generate_audio=True,
-        seed=seed,             # optional — pass the user's pinned/chosen seed if they have one; omit otherwise
-    ),
+    input=prompt,     # to animate a still, pass a list mixing text and an image part — see docs
+    timeout=600.0,    # generation happens inside this call; give it room
 )
 
-# Poll every 10-15s — don't hammer this faster, jobs typically take 1-3 minutes
-while not operation.done:
+# The call usually returns already completed. Poll only if it comes back still running.
+deadline = time.monotonic() + 600
+while getattr(interaction, "status", None) in ("queued", "in_progress"):
+    if time.monotonic() > deadline:
+        raise TimeoutError(f"video generation timed out; interaction id: {interaction.id}")
     time.sleep(10)
-    operation = client.operations.get(operation)
+    interaction = client.interactions.get(interaction.id)
 
-video = operation.response.generated_videos[0]
-video.video.save(output_path)  # or write video.video.video_bytes to disk manually
+if getattr(interaction, "output_video", None) is None or not interaction.output_video.data:
+    raise RuntimeError(
+        f"no video in response; status={getattr(interaction, 'status', None)!r} — "
+        "inspect the interaction before assuming it hung"
+    )
+
+with open(output_path, "wb") as f:
+    f.write(base64.b64decode(interaction.output_video.data))
 ```
 
 ## Response handling
 
-`operation.done` flips to `True` when the job finishes. On success, `operation.response.generated_videos` holds the clip(s); on failure, check `operation.error` before assuming it hung. Download and save immediately — generated-video URLs are not guaranteed to stay valid indefinitely.
+`interaction.output_video.data` holds the clip base64-encoded for responses under 4MB — a real 10s 720p clip came back at ~2.7MB, so text-to-video jobs normally fit inline. For anything larger, pass `delivery="uri"` on the create call, then poll `client.files.get()` until the file state is `ACTIVE` and download it with `client.files.download()`, per the docs. Save immediately either way; don't assume a delivery URI stays valid.
 
 ## Notes
 
-- This is a preview model name and the API surface for it may still be settling — before relying on this recipe for a real (paid) run, do a quick check against the current docs, since Google shipped this to the developer API only recently.
-- Because this is async and billed per second, this is exactly the model the skill's "quote cost, wait for approval" rule is guarding. Never fire this off speculatively.
-- To keep a clip visually on-model with approved stills, pass the approved image as the `image=` input rather than re-describing the scene in text — the still anchors palette, character, and framing; a text-only prompt re-rolls the look.
-- Seed on video is the weakest of the coherence levers — best-effort like on the image models, and this preview API surface is still settling, so confirm the current docs accept it before a paid run and drop it if the call rejects it. The still-image input is what actually holds the look. When a seed was passed, log it in the sidecar's `params` like any image run.
+- **Do not use `client.models.generate_videos` for this model.** Verified against the live API on 2026-08-01, that path fails three independent ways before producing a frame: the server rejects the model for that RPC ("`models/gemini-omni-flash-preview` … is not supported for predictLongRunning", 404), the SDK has deprecated the `prompt=`/`image=` argument style it needs, and `generate_audio=True` raises client-side in Developer API mode ("only supported in Gemini Enterprise Agent Platform mode"). Audio needs no flag on the Interactions path — it's native to the model, and the produced mp4 carries a real audio track.
+- Because this is billed per second, this is exactly the model the skill's "quote cost, wait for approval" rule is guarding. Never fire this off speculatively.
+- To keep a clip visually on-model with approved stills, pass the approved image as an input part rather than re-describing the scene in text — the still anchors palette, character, and framing; a text-only prompt re-rolls the look.
+- Seed on video is the weakest of the coherence levers, and the Interactions API surface for it is still settling — confirm the current docs accept it before relying on it in a paid run. The still-image input is what actually holds the look. When a seed was passed, log it in the sidecar's `params` like any image run.

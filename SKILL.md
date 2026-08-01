@@ -11,7 +11,7 @@ Calls Google's Gemini media models directly through the Gemini API — no third-
 
 1. **Route** — pick the model for the job (draft image, standard image, quality image, or video) and read its recipe file before calling anything. Recipes hold the exact request shape and any quirks that have shown up since the model shipped.
 2. **Load references** — pull any real reference images (logos, faces, style shots) from `generations/refs/`, or from a named reference set if the request invokes `/ref-gen` or says "from reference" or "on brand" (see Reference library). Never substitute a text description for a reference image that exists.
-3. **Generate** — call the API per the recipe. Images reply synchronously; video is a submit-then-poll operation. Save the result flat into the generations folder.
+3. **Generate** — call the API per the recipe. Images reply synchronously; video is one longer blocking call on the Interactions API (typically 30-90s — poll only if it returns still running). Save the result flat into the generations folder.
 4. **Log** — write the sidecar JSON next to the file (see Logging).
 
 ## Models
