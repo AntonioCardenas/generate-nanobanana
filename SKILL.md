@@ -1,6 +1,6 @@
 ---
 name: generate
-description: Generate images and videos using Google's Gemini media models (Nano Banana 2 Lite, Nano Banana 2, Nano Banana Pro, Gemini Omni Flash) via the Gemini API. Use this whenever the user asks to generate, create, or make an image or video, wants a thumbnail, wants to animate a still image, says "generate on brand" or "generate from reference", wants to link or import a folder of reference images, invokes /generate or /ref-gen, or asks to update this skill ("/generate update") — even if they don't name a specific model, and even if they just describe a visual they want without saying "generate."
+description: Generate images and videos using Google's Gemini media models (Nano Banana 2 Lite, Nano Banana 2, Nano Banana Pro, Gemini Omni Flash) via the Gemini API. Use this whenever the user asks to generate, create, or make an image or video, wants a thumbnail, wants to animate a still image, says "generate on brand" or "generate from reference", wants to link or import a folder of reference images, invokes /generate or /generate frf, or asks to update this skill ("/generate update") — even if they don't name a specific model, and even if they just describe a visual they want without saying "generate."
 ---
 
 # /generate
@@ -10,7 +10,7 @@ Calls Google's Gemini media models directly through the Gemini API — no third-
 ## How a generation flows
 
 1. **Route** — pick the model for the job (draft image, standard image, quality image, or video) and read its recipe file before calling anything. Recipes hold the exact request shape and any quirks that have shown up since the model shipped.
-2. **Load references** — pull any real reference images (logos, faces, style shots) from `generations/refs/`, or from a named reference set if the request invokes `/ref-gen` or says "from reference" or "on brand" (see Reference library). Never substitute a text description for a reference image that exists.
+2. **Load references** — pull any real reference images (logos, faces, style shots) from `generations/refs/`, or from a named reference set if the request invokes `/generate frf` or says "from reference" or "on brand" (see Reference library). Never substitute a text description for a reference image that exists.
 3. **Generate** — call the API per the recipe. Images reply synchronously; video is a submit-then-poll operation. Save the result flat into the generations folder.
 4. **Log** — verify the generated file is actually on disk and non-empty, then write the sidecar JSON next to it (see Logging). Never log a generation whose file isn't there.
 
@@ -64,8 +64,8 @@ If the user doesn't name the set, default to the folder's own name. To resolve a
 
 ### Generating from a set
 
-- **`/ref-gen <set> …`** — use that set's images as the reference inputs for the generation. The spoken form "generate from reference `<set>` …" works the same, and a raw folder path in place of a set name is fine too — treat it as a one-off set.
-- **"generate on brand …"** — shorthand for `/ref-gen brand`. If no set named `brand` exists yet, ask the user for a folder to link or import before generating anything.
+- **`/generate frf <set> …`** — use that set's images as the reference inputs for the generation. The spoken form "generate from reference `<set>` …" works the same, and a raw folder path in place of a set name is fine too — treat it as a one-off set. Always prefixed with `/generate` — a skill registers exactly one slash command, taken from the name of the folder it's installed into (`generate`, not this file's `name:` frontmatter — see Supported Environments & Agents), so a bare `/frf` is rejected as an unknown command on agents like Claude Code that route slash commands strictly.
+- **"generate on brand …"** — shorthand for `/generate frf brand`. If no set named `brand` exists yet, ask the user for a folder to link or import before generating anything.
 
 **Where the output lands.** By default, ref-based generations save flat into the workspace's `generations/` folder like everything else. A set can override that with an `output` folder — set it in `sets.json`, or just say "save these to public/images" — and then the generated file and its sidecar land there instead, ready to use in the project. Outputs never save into the refs folder itself: references in, results out, the two never mix.
 
@@ -92,7 +92,8 @@ Two different jobs hide under "make it again": re-running one image, and keeping
 This skill works across multiple AI agents and CLI tools:
 - **Antigravity**: Supports direct Python API execution with `GEMINI_API_KEY` or native `generate_image` tool fallback for instant zero-key image previews.
 - **Antigravity CLI**: Invoke via the `agy` binary (e.g. `agy generate`). Migrating from the retired Gemini CLI? Import your existing config/extensions with `agy plugin import gemini`.
-- **Claude Code, Cursor, Codex, OpenCode**: Compatible with any agent reading `.agents/skills` or standard `SKILL.md` definitions.
+- **Claude Code**: Skills load from `~/.claude/skills/<name>/` (global) or `.claude/skills/<name>/` (project-local, checked in every parent directory up to the repo root) — never from `.agents/skills`, which is a different tool's path even though Claude Code's skill format follows the same open standard. The slash command Claude Code registers is the **install folder's name**, not this file's `name:` frontmatter (which is only a display label) — that's why both the install steps below and the `skills` CLI name the folder `generate`; renaming it renames the command too. Sub-commands like `frf` or `update` aren't separately registered, so always type them as arguments to `/generate` (`/generate frf <set> …`, `/generate update`) or as plain language; a bare `/frf` returns "Unknown command." Editing or adding skills inside an already-loaded `skills/` directory takes effect immediately, mid-session — a restart is only needed the first time that top-level `skills/` directory itself is created.
+- **Cursor, Codex, OpenCode**: Compatible with any agent reading standard `SKILL.md` definitions in their own skills directory convention.
 
 ## Installation
 
@@ -121,9 +122,14 @@ An update touches only the skill's own files. Never touch the workspace's `gener
 
 ## Authentication
 
-Calls use a Google AI Studio key in the `GEMINI_API_KEY` environment variable. If it's missing:
-- In standard agent/CLI runs: Stop and ask for the key — don't fall back to Vertex AI or a service account unless explicitly requested.
+Calls use a Google AI Studio key in the `GEMINI_API_KEY` environment variable. Check for it in this order:
+
+1. **Already exported** — if the shell environment already has `GEMINI_API_KEY`, use it as-is.
+2. **A `.env` file at the workspace root** — not the skill's own install folder, the root of the project being generated into. If the user has already set one up (`GEMINI_API_KEY=...` in it) and it's not yet exported, load it before the Python call — e.g. `set -a; source .env; set +a` — so the `google-genai` SDK's `genai.Client()` can pick it up from the environment.
+3. **Neither exists** — stop and ask the user to set it up themselves: either `export GEMINI_API_KEY=your_key_here` (add it to their shell profile to survive new sessions), or a `.env` file at the workspace root with `GEMINI_API_KEY=your_key_here`. Setting up the key — including any `.env` file, `.env.example` template, or `.gitignore` entry — is the user's own responsibility; this skill only ever reads `GEMINI_API_KEY` once it's there, and never creates or edits those files itself.
 - In **Antigravity**: If `GEMINI_API_KEY` is not present, you can seamlessly fall back to Antigravity's built-in `generate_image` tool for instant generation.
+
+The recipes in `models/` call the `google-genai` Python SDK directly. In agents that run this through a shell rather than a native Python tool (Claude Code, Codex, OpenCode, Cursor), check it's importable before the first call (`python3 -c "import google.genai"`). If it's missing, tell the user you're about to install Google's official `google-genai` package from PyPI, then run `pip install google-genai` — never silently, and never any other package on this skill's own initiative.
 
 ## Output
 
@@ -167,3 +173,14 @@ After saving a generated file — and verifying it's on disk, per the Rules — 
 `params.seed` is required for image generations — it's what makes "same image but change X" possible weeks later. For video it's optional: log it whenever one was passed. `reference_set` names the set the images came from — omit it when references were passed individually. For linked sets, list the resolved absolute paths in `reference_images` so the log stays accurate even if the link later changes.
 
 This gives a full audit trail — what was generated, from what prompt, at what cost — without reconstructing it from memory weeks later.
+
+## Security
+
+This is the skill's full capability footprint — never expand it on your own initiative:
+
+- **Network** — HTTPS calls to Google's `generativelanguage.googleapis.com` only, per the recipes in `models/`. No other endpoint, ever.
+- **Secrets** — `GEMINI_API_KEY` is only ever read (from the environment or a workspace `.env` the user already set up — see Authentication), never written. Never log it, print it, or put it in a sidecar, a prompt, or a committed file. This skill never creates or edits `.env`, `.env.example`, or `.gitignore` — that setup is the user's own responsibility.
+- **File writes** — confined to the workspace: `generations/` and `generations/refs/` (including `sets.json`). Nothing outside the current project, and nothing related to key setup.
+- **Package installs** — the official `google-genai` PyPI package, and only when it's missing (see Authentication). No other package, and never silently.
+
+A skills marketplace's automated audit flagging this skill as medium risk is consistent with this list, not a sign of something hidden — a real API key, a real network call, and a conditional package install are exactly what a "call an external paid API" skill looks like to a scanner that can't see intent. If a change would add a new endpoint, a new install, or a write outside this list, treat that as a design decision for the user to approve, not something to do quietly.

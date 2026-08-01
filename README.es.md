@@ -4,6 +4,8 @@
 
 > Skill para la generación de imágenes y videos con IA usando Google Gemini (Nano Banana 2 Lite, Nano Banana 2, Nano Banana Pro, Gemini Omni Flash). Compatible con **Antigravity**, **Antigravity CLI**, **Claude Code**, **Cursor** y otros entornos de agentes. Control de costos antes de ejecuciones de pago, imágenes de referencia reales y un registro de prompts al lado de cada archivo.
 
+Esta skill ayuda a generar imágenes consistentes con la marca (on-brand) que pueden ayudarte a generar imágenes y videos consistentes para tus proyectos, como sitios web y otros.
+
 Un solo comando que genera imágenes y videos a través de los modelos de medios de Gemini de Google, que nunca te sorprende con una factura inesperada y archiva cada resultado —con el prompt exacto que lo generó— en una sola carpeta.
 
 Tú dices "genera una miniatura de X". La skill redirige el trabajo al modelo correcto (borrador económico, versión final de calidad o video), carga tus imágenes de referencia reales en lugar de describir tu logotipo con palabras, te da una cotización del costo y espera tu aprobación antes de ejecutar cualquier tarea costosa, guarda el resultado directamente en una carpeta `generations/` dentro de tu workspace y escribe una pequeña nota JSON al lado que registra el prompt, el modelo, el seed y el costo. Tres semanas después, cuando miras un archivo y piensas "¿qué prompt generó ESTO?", la respuesta estará allí mismo, justo al lado.
@@ -38,6 +40,18 @@ export GEMINI_API_KEY=your_key_here   # o agrégalo a tu perfil de shell
 
 Esto utiliza `npx` con el [skills CLI](https://github.com/vercel-labs/skills), que resuelve `owner/repo` directamente a este repositorio y coloca la skill en el directorio de configuración de tu agente. Es compatible con **Antigravity**, **Antigravity CLI**, **Claude Code**, **Cursor**, **Codex**, **OpenCode** y otros — selecciona tu objetivo con `-a claude-code` o `-a antigravity-cli`, o agrega `-g` para instalar de forma global en lugar del proyecto actual.
 
+**Configurar la clave.** Esto depende de ti, no de la skill — ella solo lee `GEMINI_API_KEY`, nunca crea ni edita ningún archivo para configurarla. Dos formas de hacerla disponible:
+
+- **Export de shell** (arriba) — rápido, pero limitado a la terminal actual a menos que también lo pegues en tu perfil de shell (`~/.zshrc`, `~/.bash_profile`) para que sobreviva a nuevas sesiones.
+- **Un archivo `.env`** — para trabajo en proyectos, colócalo en la raíz del proyecto en el que estás generando (no dentro de la carpeta de instalación de la skill):
+
+  ```
+  # .env
+  GEMINI_API_KEY=tu_clave_aquí
+  ```
+
+  Si ese proyecto es un repositorio git, agrega `.env` a su `.gitignore` tú mismo para que la clave nunca se suba al repositorio. La skill revisa `.env` automáticamente una vez que existe, junto con la variable de entorno normal — solo necesitas configurarlo una vez por proyecto.
+
 Si prefieres hacerlo manualmente:
 
 ```bash
@@ -46,7 +60,7 @@ mkdir -p ~/.claude/skills
 cp -R ~/tools/generate-nanobanana ~/.claude/skills/generate
 ```
 
-**Reinicia tu sesión del agente en cualquiera de los dos casos.** El detector de cambios de archivos solo cubre los directorios que existían cuando comenzó la sesión, por lo que una skill instalada a mitad de la sesión no se detectará hasta que reinicies. Si parece que la skill no existe, esta es la razón.
+**Reinicia tu sesión del agente solo si esta es la primera skill que instalas.** La mayoría de los agentes (Claude Code incluido) vigilan un directorio de skills ya existente y detectan skills nuevas o actualizadas a mitad de sesión sin reiniciar — pero la primerísima instalación crea ese directorio, y el detector de cambios solo cubre directorios que ya existían cuando comenzó la sesión. Si `/generate` no aparece justo después de instalar, reinicia una vez; después de eso, las actualizaciones se aplican en caliente.
 
 **Actualizar después** es un solo comando — pídeselo al agente:
 
@@ -62,12 +76,12 @@ Luego simplemente pregunta:
 /generate a 16:9 thumbnail for my Angular signals article, use refs/logo.png
 ```
 
-El repositorio se llama `generate-nanobanana` para que sea fácil de encontrar; la skill en sí se llama `generate`, por lo que el comando se mantiene corto.
+El repositorio se llama `generate-nanobanana` para que sea fácil de encontrar; la skill se instala bajo la carpeta `generate` (ver los pasos de instalación arriba), que es lo que agentes como Claude Code convierten en el comando `/generate` — así el comando se mantiene corto sin importar el nombre del repositorio.
 
 ## Cómo fluye una generación
 
 1. **Ruteo (Route)** — selecciona el modelo para el trabajo y lee su archivo de receta antes de realizar cualquier llamada.
-2. **Carga de referencias (Load references)** — carga logotipos, rostros y capturas de estilo reales desde `generations/refs/`, o un conjunto completo con nombre cuando dices "on brand" o `/ref-gen <conjunto>`. Un logotipo descrito con palabras suele salir mal; los píxeles reales no fallan.
+2. **Carga de referencias (Load references)** — carga logotipos, rostros y capturas de estilo reales desde `generations/refs/`, o un conjunto completo con nombre cuando dices "on brand" o `/generate frf <conjunto>`. Un logotipo descrito con palabras suele salir mal; los píxeles reales no fallan.
 3. **Generación (Generate)** — llama a la API de Gemini según la receta. Las imágenes responden en una sola llamada; el video requiere un proceso de envío y consulta continua (submit-then-poll).
 4. **Registro (Log)** — verifica que la imagen realmente llegó al disco y luego escribe el archivo JSON de registro (sidecar) junto a ella. Sin imagen no hay sidecar — una entrada de registro es la prueba de que el archivo existe.
 
@@ -78,15 +92,17 @@ Registra una carpeta de recursos de marca una sola vez, y luego úsala completa 
 ```
 /generate link ~/empresa/recursos-de-marca as brand
 /generate on brand un banner 16:9 para el lanzamiento de la venta de otoño
-/ref-gen brand una tarjeta de producto cuadrada para la misma campaña
+/generate frf brand una tarjeta de producto cuadrada para la misma campaña
 ```
+
+`frf` siempre se escribe como argumento de `/generate` — una skill solo registra un comando de barra, tomado del nombre de su carpeta de instalación (`generate`), así que un `/frf` sin prefijo devuelve "Unknown command" en agentes como Claude Code que enrutan los comandos de barra de forma estricta. El lenguaje natural también funciona en todos lados: "generate from reference brand una tarjeta de producto cuadrada…".
 
 Dos formas de registrar una carpeta:
 
 - **Vincular (link)** — registra la ruta de la carpeta en `generations/refs/sets.json`. Las imágenes se leen en vivo desde donde ya están, por lo que los nuevos recursos aparecen sin volver a registrar nada.
 - **Importar (import)** — copia las imágenes a `generations/refs/<nombre>/` como una instantánea estable que sobrevive si la carpeta original se mueve.
 
-`on brand` es el atajo para el conjunto llamado `brand`; cualquier otro conjunto funciona con `/ref-gen <conjunto> …` (una ruta de carpeta directa también funciona, y la forma hablada "generate from reference `<conjunto>`" se enruta igual). La skill selecciona las imágenes relevantes para el trabajo en lugar de enviar la carpeta completa — hasta el límite de referencias de cada modelo (2 en Lite, 14 en Pro) — y el JSON de registro (sidecar) documenta exactamente qué archivos se enviaron.
+`on brand` es el atajo para el conjunto llamado `brand`; cualquier otro conjunto funciona con `/generate frf <conjunto> …` (una ruta de carpeta directa también funciona, y la forma hablada "generate from reference `<conjunto>`" se enruta igual). La skill selecciona las imágenes relevantes para el trabajo en lugar de enviar la carpeta completa — hasta el límite de referencias de cada modelo (2 en Lite, 14 en Pro) — y el JSON de registro (sidecar) documenta exactamente qué archivos se enviaron.
 
 Un conjunto también puede incluir un `style.md` — una descripción corta y fija del estilo visual del conjunto (paleta, iluminación, cámara, estilo de renderizado). Cuando existe, su texto se antepone **literalmente** a cada prompt generado desde ese conjunto, de modo que una serie comparte un solo lenguaje visual en lugar de desviarse un poco con cada reformulación.
 
@@ -138,6 +154,17 @@ Después de instalar, verifica que la carpeta `models/` se haya colocado junto a
 **No es multiproveedor.** Sin Kling, sin Seedance, sin Sora, sin enrutamiento de respaldo entre agregadores. Esta es una decisión deliberada: una única ruta de autenticación y acceso inmediato a las funciones de Gemini, a costa de la variedad de modelos. Si necesitas modelos que no sean de Google bajo una misma clave, considera usar envoltorios tipo Higgsfield en su lugar — diferente herramienta, diferente decisión.
 
 **Los IDs de modelos en vista previa cambiarán.** `gemini-3-pro-image-preview` y `gemini-omni-flash-preview` son nombres de vista previa. Si una llamada devuelve "model not found" (modelo no encontrado), consulta la [documentación de la API de Gemini](https://ai.google.dev/gemini-api/docs) para obtener el ID actual y actualiza el archivo de receta correspondiente. Ese es el único mantenimiento que requiere este sistema.
+
+## Seguridad
+
+Marketplaces como [skills.sh](https://skills.sh) ejecutan auditorías automatizadas (con Gen, Socket y Snyk) y pueden mostrar esta skill como **riesgo medio**. Eso es esperado, no una señal de alarma que ignorar — proviene de lo que la skill realmente hace, no de algo oculto:
+
+- **Llamadas de red** — cada generación es una solicitud HTTPS real a `generativelanguage.googleapis.com` de Google, que lleva tu prompt, tus referencias y tu clave de API. Nunca se contacta ningún otro endpoint.
+- **Manejo de secretos** — solo lee `GEMINI_API_KEY`, desde el entorno o un archivo `.env` que tú mismo configuraste (ver Configurar la clave arriba); nunca crea ni edita `.env`, `.env.example` ni `.gitignore`. La clave nunca sale de tu máquina excepto en la llamada directa a Google.
+- **Una instalación de paquete** — si el paquete oficial de PyPI `google-genai` no está ya presente, la skill lo instala después de avisarte — la única dependencia de este sistema, y es el SDK propio de Google, no un envoltorio de terceros.
+- **Escrituras de archivos** — limitadas al workspace: `generations/` y `generations/refs/`. Nada fuera del proyecto actual, y nada relacionado con la configuración de la clave.
+
+La forma exacta de cada solicitud está en `models/*.md` por si prefieres verificarla tú mismo en lugar de confiar en esta lista.
 
 ## Licencia
 
