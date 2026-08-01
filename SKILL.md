@@ -112,7 +112,7 @@ git clone https://github.com/AntonioCardenas/generate-nanobanana ~/.claude/skill
 
 Calls use a Google AI Studio key in the `GEMINI_API_KEY` environment variable. If it's missing:
 - In standard agent/CLI runs: Stop and ask for the key — don't fall back to Vertex AI or a service account unless explicitly requested.
-- In **Antigravity**: If `GEMINI_API_KEY` is not present, you can seamlessly fall back to Antigravity's built-in `generate_image` tool for instant generation.
+- In **Antigravity**: the built-in `generate_image` tool can cover image jobs without a key — but don't switch to it silently. Offer the fallback and wait for a yes, because it runs outside this skill's contract: no recipe routing, no model choice from the tables here, and none of the cost quoting the Rules promise. If the user takes it, say which path ran, and still write the sidecar (with the tool named in `model`, e.g. `"antigravity/generate_image"`) so the audit trail stays unbroken. Video has no fallback — stop and ask for the key.
 
 ## Output
 
