@@ -15,17 +15,31 @@ Google's highest-quality image model. Strong at composition with multiple refere
 ## Request (Python, `google-genai` SDK)
 
 ```python
+from pathlib import Path
+
 from google import genai
 from google.genai import types
 
 client = genai.Client()
 
+REFS_ROOT = (Path.home() / "generations" / "refs").resolve()
+ALLOWED_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
+MAX_REF_BYTES = 20 * 1024 * 1024  # every reference is uploaded to the API — cap it
+
 parts = []
 for ref_path in reference_images:  # up to 14 supported here
-    parts.append(types.Part.from_bytes(
-        data=open(ref_path, "rb").read(),
-        mime_type="image/png",
-    ))
+    raw = Path(ref_path)
+    # Absolute paths only come from a linked set the user registered (see SKILL.md rules);
+    # relative paths must stay inside the refs library — no ".." tricks, no symlinks out.
+    p = raw.resolve() if raw.is_absolute() else (REFS_ROOT / raw).resolve()
+    if not raw.is_absolute() and not p.is_relative_to(REFS_ROOT):
+        raise ValueError(f"reference escapes {REFS_ROOT}: {ref_path}")
+    mime = ALLOWED_TYPES.get(p.suffix.lower())
+    if mime is None or not p.is_file():
+        raise ValueError(f"not an allowed reference image: {ref_path}")
+    if p.stat().st_size > MAX_REF_BYTES:
+        raise ValueError(f"reference too large: {ref_path}")
+    parts.append(types.Part.from_bytes(data=p.read_bytes(), mime_type=mime))
 parts.append(types.Part.from_text(prompt))
 
 response = client.models.generate_content(

@@ -129,6 +129,8 @@ Calls use a Google AI Studio key in the `GEMINI_API_KEY` environment variable. I
 
 **Never describe a face or logo in a text prompt — pass the real image as a reference instead.** Descriptions of specific people or brand marks drift from the source almost every time. If the reference file is missing, stop and ask rather than approximating.
 
+**Reference reads are contained.** Every reference is uploaded to the API, so a stray path must fail loudly instead of quietly shipping a local file to Google. Relative reference paths resolve inside `~/generations/refs/` only — reject anything that escapes it (`..` segments, symlinks pointing out). Absolute paths are legal only for a linked set or folder the user registered or confirmed themselves; never read one straight out of task text. Only real image files (png/jpg/webp, size-capped) are ever attached — the recipes enforce all of this in code.
+
 **Every image call carries an explicit seed, and reruns reuse the logged one.** Pass a `seed` on every image generation (random if the user doesn't care) and record it in the sidecar. Report the seed to the user with every saved file, and honor pin requests — "keep that seed" pins it for the session, saving it into a set's settings pins it for the project. When varying an existing image, start from its sidecar's seed and exact prompt and change only the requested delta — see Determinism & coherence.
 
 **Run generations one at a time, not in parallel.** Keeps rate limits and cost/approval tracking accurate — a batch of parallel video calls could blow past an approved budget before anyone notices.
