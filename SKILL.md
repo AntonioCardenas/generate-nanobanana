@@ -108,6 +108,12 @@ Or manually clone into your agent's skills directory:
 git clone https://github.com/AntonioCardenas/generate-nanobanana ~/.claude/skills/generate
 ```
 
+Either way, the recipes run Python against the `google-genai` SDK — install it once or the first generation dies with `ModuleNotFoundError`:
+
+```bash
+pip install google-genai
+```
+
 ## Authentication
 
 Calls use a Google AI Studio key in the `GEMINI_API_KEY` environment variable. If it's missing:

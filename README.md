@@ -28,12 +28,13 @@ Each model has its own recipe file in `models/` holding the exact request shape,
 
 ## Install & Supported Agents
 
-Requirements: a [Google AI Studio API key](https://aistudio.google.com/apikey) (or **Antigravity** zero-key built-in tool fallback), and **Antigravity**, **Gemini CLI**, **Claude Code**, or any agent that reads skill files.
+Requirements: a [Google AI Studio API key](https://aistudio.google.com/apikey) (or **Antigravity** zero-key built-in tool fallback), Python 3.9+ with the [`google-genai` SDK](https://pypi.org/project/google-genai/) (every recipe calls it), and **Antigravity**, **Gemini CLI**, **Claude Code**, or any agent that reads skill files.
 
 Install directly using [`npx`](https://docs.npmjs.com/cli/v7/commands/npx) via the [skills CLI](https://github.com/vercel-labs/skills):
 
 ```bash
 npx skills add AntonioCardenas/generate-nanobanana
+pip install google-genai              # the SDK every recipe imports
 export GEMINI_API_KEY=your_key_here   # or put it in your shell profile
 ```
 
