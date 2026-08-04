@@ -8,7 +8,7 @@ Esta skill ayuda a generar imágenes consistentes con la marca (on-brand) que pu
 
 Un solo comando que genera imágenes y videos a través de los modelos de medios de Gemini de Google, que nunca te sorprende con una factura inesperada y archiva cada resultado —con el prompt exacto que lo generó— en una sola carpeta.
 
-Tú dices "genera una miniatura de X". La skill redirige el trabajo al modelo correcto (borrador económico, versión final de calidad o video), carga tus imágenes de referencia reales en lugar de describir tu logotipo con palabras, te da una cotización del costo y espera tu aprobación antes de ejecutar cualquier tarea costosa, guarda el resultado directamente en una carpeta `generations/` dentro de tu workspace y escribe una pequeña nota JSON al lado que registra el prompt, el modelo, el seed y el costo. Tres semanas después, cuando miras un archivo y piensas "¿qué prompt generó ESTO?", la respuesta estará allí mismo, justo al lado.
+Tú dices "genera una miniatura de X". La skill redirige el trabajo al modelo correcto (borrador económico, versión final de calidad o video), carga tus imágenes de referencia reales en lugar de describir tu logotipo con palabras, te da una cotización del costo y espera tu aprobación antes de ejecutar cualquier tarea — imagen o video, ambas se facturan —, guarda el resultado directamente en una carpeta `generations/` dentro de tu workspace y escribe una pequeña nota JSON al lado que registra el prompt, el modelo y el costo. Tres semanas después, cuando miras un archivo y piensas "¿qué prompt generó ESTO?", la respuesta estará allí mismo, justo al lado.
 
 Diseñado exclusivamente para Google: una sola clave de API, una sola factura y las características más recientes de Gemini (fusión de múltiples imágenes de Nano Banana Pro, audio sincronizado de Omni Flash) el mismo día de su lanzamiento — sin intermediarios.
 
@@ -22,10 +22,10 @@ Diseñado exclusivamente para Google: una sola clave de API, una sola factura y 
 |---|---|---|---|
 | Imagen (borrador) | Nano Banana 2 Lite | `gemini-3.1-flash-lite-image` | $0.03–0.05 / imagen |
 | Imagen (estándar) | Nano Banana 2 | `gemini-3.1-flash-image` | $0.07–0.15 / imagen |
-| Imagen (calidad) | Nano Banana Pro | `gemini-3-pro-image-preview` | $0.13–0.30 / imagen |
+| Imagen (calidad) | Nano Banana Pro | `gemini-3-pro-image` | $0.13–0.30 / imagen |
 | Video | Gemini Omni Flash | `gemini-omni-flash-preview` | facturado por segundo — cotizado previamente |
 
-Cada modelo tiene su propio archivo de receta en `models/` que contiene la estructura exacta de la solicitud, el manejo de respuestas y las consideraciones especiales. Cuando Google lanza un mejor modelo, simplemente agregas un archivo markdown y la skill lo aprende. Nada más cambia.
+Cada llamada pasa por la Interactions API de Google (`client.interactions.create`) y todas se facturan — cotiza el precio actual y obtén aprobación antes de cualquiera de ellas, no solo antes de video. Cada modelo tiene su propio archivo de receta en `models/` que contiene la estructura exacta de la solicitud, el manejo de respuestas y las consideraciones especiales. Cuando Google lanza un mejor modelo, simplemente agregas un archivo markdown y la skill lo aprende. Nada más cambia.
 
 ## Instalación y Agentes Compatibles
 
@@ -112,10 +112,10 @@ Un conjunto también puede incluir un `style.md` — una descripción corta y fi
 
 Casi todo en esta skill es una restricción, y son estas restricciones las que la hacen útil en el día a día en lugar de limitarla:
 
-- **Cotización antes de video.** El video es el flujo más costoso. La skill indica el modelo, la duración y los dólares esperados, y luego espera un consentimiento explícito. Una aprobación cubre exactamente una ejecución.
+- **Cotización antes de cada llamada de pago — imagen o video.** El video es el flujo más costoso, pero las imágenes tampoco son gratis. La skill indica el modelo y los dólares esperados (y la duración, en video), y luego espera un consentimiento explícito. Una aprobación cubre exactamente una ejecución.
 - **Borrador económico, acabado de calidad.** Itera en Nano Banana 2 Lite; vuelve a ejecutar tu favorito en Nano Banana 2, o en Pro cuando el trabajo necesite fusión de múltiples imágenes o texto denso en la imagen. Dejas de pagar precios premium por borradores desechables.
 - **Referencias reales, nunca descritas.** Si falta una imagen de referencia necesaria, la skill se detiene y la solicita en lugar de aproximar tu marca a partir de una descripción de texto.
-- **Con seed y registrado, para que se repita.** Cada llamada de imagen lleva un seed explícito, registrado en el sidecar y comunicado con cada resultado. "La misma imagen pero cambia el titular" reutiliza el seed y el prompt exacto registrados y cambia solo eso — en lugar de volver a sortear toda la composición y cruzar los dedos. ¿Te gustó el estilo? Di "keep that seed" (conserva ese seed) para fijarlo durante el resto de la sesión, o guárdalo en un conjunto de referencia para que todo el proyecto siga generando con él. Para series que deben coincidir entre sí (un personaje, una línea de productos), la primera imagen aprobada vuelve a entrar como referencia en cada imagen posterior.
+- **Registrado, para que una repetición parta de lo real y no de la memoria.** Ningún modelo aquí documenta un parámetro de seed — nada garantiza una repetición idéntica — así que el sidecar registra el prompt exacto, las referencias y el ID de la respuesta en su lugar. "La misma imagen pero cambia el titular" reutiliza ese prompt y esas referencias registradas y cambia solo eso — en lugar de volver a sortear toda la composición a partir de una descripción a medias. Para series que deben coincidir entre sí (un personaje, una línea de productos), la primera imagen aprobada vuelve a entrar como referencia en cada imagen posterior.
 - **Una carpeta plana, en tu workspace.** Cada archivo generado se guarda en una carpeta `generations/` en la raíz del proyecto en el que estás trabajando, sin subcarpetas — tus imágenes viven junto al código que las usa, no perdidas en tu directorio home. Cualquier galería, script o búsqueda simple en la carpeta puede leer toda la biblioteca de medios del proyecto sin configuración adicional. (¿Trabajando fuera de un proyecto? Se usa `~/generations` como respaldo para que los archivos sigan teniendo un hogar predecible.)
 - **Un archivo de registro (sidecar) al lado de cada archivo.** Mismo nombre base, extensión `.json`. Ese es todo el contrato, lo que significa que ningún prompt se pierde:
 
@@ -125,7 +125,8 @@ Casi todo en esta skill es una restricción, y son estas restricciones las que l
   "prompt": "el prompt exacto enviado",
   "reference_images": ["generations/refs/brand/logo_dark.png"],
   "reference_set": "brand",
-  "params": { "aspect_ratio": "16:9", "image_size": "1K", "seed": 481047 },
+  "response_id": "v1_...",
+  "params": { "aspect_ratio": "16:9", "image_size": "1K" },
   "cost": "$0.04",
   "created": "2026-07-31T14:20:00Z",
   "approved_by_user": true
@@ -149,11 +150,13 @@ Después de instalar, verifica que la carpeta `models/` se haya colocado junto a
 
 **No es un reemplazo de Flow.** Google Flow es la interfaz creativa para estos mismos modelos: construcción de escenas toma por toma, controles de cámara, edición precisa de fotogramas. Flow es una interfaz web sin API, por lo que cuando un trabajo necesita herramientas al estilo de Flow, la skill lo indica y te redirige allí en lugar de simularlo mediante llamadas a la API.
 
-**No es gratuito.** Las imágenes cuestan centavos, pero el video se factura por segundo y unos pocos clips pueden acumularse rápidamente. Es precisamente por eso que existe el paso de aprobación y por qué la skill nunca ejecutará un trabajo de video de forma especulativa. Monitorea tu uso durante el primer día.
+**No es gratuito.** Las imágenes cuestan centavos cada una, pero no son cero, y el video se factura por segundo y unos pocos clips pueden acumularse rápidamente. Es precisamente por eso que el paso de aprobación cubre cada llamada de pago, no solo video, y por qué la skill nunca ejecutará una de forma especulativa. Monitorea tu uso durante el primer día.
 
 **No es multiproveedor.** Sin Kling, sin Seedance, sin Sora, sin enrutamiento de respaldo entre agregadores. Esta es una decisión deliberada: una única ruta de autenticación y acceso inmediato a las funciones de Gemini, a costa de la variedad de modelos. Si necesitas modelos que no sean de Google bajo una misma clave, considera usar envoltorios tipo Higgsfield en su lugar — diferente herramienta, diferente decisión.
 
-**Los IDs de modelos en vista previa cambiarán.** `gemini-3-pro-image-preview` y `gemini-omni-flash-preview` son nombres de vista previa. Si una llamada devuelve "model not found" (modelo no encontrado), consulta la [documentación de la API de Gemini](https://ai.google.dev/gemini-api/docs) para obtener el ID actual y actualiza el archivo de receta correspondiente. Ese es el único mantenimiento que requiere este sistema.
+**No garantiza resultados reproducibles.** Ningún modelo aquí documenta un parámetro de seed en la Interactions API de Google. Cada repetición es una generación nueva y no determinista, no una copia — el sidecar existe para que reutilices el prompt y las referencias exactas en lugar de prometer resultados idénticos.
+
+**Los IDs de modelo cambian según el calendario de Google, no el de esta skill.** `gemini-3-pro-image-preview` ya fue descontinuado en favor del GA `gemini-3-pro-image`; `gemini-omni-flash-preview` sigue siendo un nombre de vista previa y podría cambiar después. Si una llamada devuelve "model not found" (modelo no encontrado), consulta la [documentación de la API de Gemini](https://ai.google.dev/gemini-api/docs) para obtener el ID actual y actualiza el archivo de receta correspondiente. Ese es el único mantenimiento que requiere este sistema.
 
 ## Seguridad
 

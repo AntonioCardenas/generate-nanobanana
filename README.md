@@ -9,7 +9,7 @@ This skill helps to generate consistent on-brand images that can help you to gen
 
 One command that generates images and videos through Google's Gemini media models, never surprises you with a bill, and files every output — with the exact prompt that made it — in one folder.
 
-You say "generate a thumbnail of X." The skill routes the job to the right model (cheap draft, quality final, or video), loads your real reference images instead of describing your logo in words, quotes the cost and waits for your go-ahead before anything expensive runs, saves the result flat into a `generations/` folder right in your workspace, and writes a small JSON note beside it recording the prompt, model, seed, and cost. Three weeks later, when you look at a file and think "what prompt made THIS?", the answer is sitting right next to it.
+You say "generate a thumbnail of X." The skill routes the job to the right model (cheap draft, quality final, or video), loads your real reference images instead of describing your logo in words, quotes the cost and waits for your go-ahead before anything runs — image or video, both are billable — saves the result flat into a `generations/` folder right in your workspace, and writes a small JSON note beside it recording the prompt, model, and cost. Three weeks later, when you look at a file and think "what prompt made THIS?", the answer is sitting right next to it.
 
 Google-only by design: one API key, one bill, and the newest Gemini features (Nano Banana Pro's multi-image fusion, Omni Flash's synced audio) the day they ship — no aggregator in the middle.
 
@@ -23,10 +23,10 @@ Google-only by design: one API key, one bill, and the newest Gemini features (Na
 |---|---|---|---|
 | Image (draft) | Nano Banana 2 Lite | `gemini-3.1-flash-lite-image` | $0.03–0.05 / image |
 | Image (standard) | Nano Banana 2 | `gemini-3.1-flash-image` | $0.07–0.15 / image |
-| Image (quality) | Nano Banana Pro | `gemini-3-pro-image-preview` | $0.13–0.30 / image |
+| Image (quality) | Nano Banana Pro | `gemini-3-pro-image` | $0.13–0.30 / image |
 | Video | Gemini Omni Flash | `gemini-omni-flash-preview` | billed per second — always quoted first |
 
-Each model has its own recipe file in `models/` holding the exact request shape, response handling, and gotchas. When Google ships a better model, you add one markdown file and the skill learns it. Nothing else changes.
+Every call above goes through Google's Interactions API (`client.interactions.create`) and every one of them is billable — quote current pricing and get approval before any of them, not only video. Each model has its own recipe file in `models/` holding the exact request shape, response handling, and gotchas. When Google ships a better model, you add one markdown file and the skill learns it. Nothing else changes.
 
 ## Install & Supported Agents
 
@@ -113,10 +113,10 @@ First run with no folder yet? The skill creates `generations/refs/brand/`, tells
 
 Almost everything in this skill is a constraint, and the constraints are what make it usable daily rather than what limits it:
 
-- **Quote before video.** Video is the expensive lane. The skill states model, duration, and expected dollars, then waits for an explicit go. One approval covers exactly one run.
+- **Quote before every paid call — image or video.** Video is the expensive lane, but images aren't free either. The skill states model and expected dollars (plus duration, for video), then waits for an explicit go. One approval covers exactly one run.
 - **Draft cheap, finish pretty.** Iterate on Nano Banana 2 Lite; rerun your favourite on Nano Banana 2, or on Pro when the job needs multi-image fusion or dense on-image text. You stop paying premium prices for throwaway drafts.
 - **Real refs, never described.** If a needed reference image is missing, the skill stops and asks for it instead of approximating your brand from a text description.
-- **Seeded and logged, so it repeats.** Every image call carries an explicit seed, recorded in the sidecar and reported back with each result. "Same image but change the headline" reuses the logged seed and exact prompt and changes only that one thing — instead of re-rolling the whole composition and hoping. Like the look? Say "keep that seed" to pin it for the rest of the session, or save it into a reference set so the whole project keeps generating with it. For series that must match (a character, a product line), the approved first image goes back in as a reference for every image after it.
+- **Logged, so a rerun starts from the truth, not memory.** No model here documents a seed parameter — nothing promises pixel-identical repeats — so the sidecar logs the exact prompt, references, and response ID instead. "Same image but change the headline" reuses that logged prompt and those references and changes only that one thing, instead of re-rolling the whole composition from a half-remembered description. For series that must match (a character, a product line), the approved first image goes back in as a reference for every image after it.
 - **One flat folder, in your workspace.** Every output lands in a `generations/` folder at the root of the project you're working in, no subfolders — your images live next to the code that uses them, not off in your home directory. Any gallery, script, or plain folder search can read the project's whole media library with zero setup. (Running outside any project? It falls back to `~/generations` so files still have one predictable home.)
 - **A sidecar log beside every file.** Same basename, `.json` extension. That's the whole contract, and it means no prompt is ever lost:
 
@@ -126,7 +126,8 @@ Almost everything in this skill is a constraint, and the constraints are what ma
   "prompt": "the exact prompt sent",
   "reference_images": ["generations/refs/brand/logo_dark.png"],
   "reference_set": "brand",
-  "params": { "aspect_ratio": "16:9", "image_size": "1K", "seed": 481047 },
+  "response_id": "v1_...",
+  "params": { "aspect_ratio": "16:9", "image_size": "1K" },
   "cost": "$0.04",
   "created": "2026-07-31T14:20:00Z",
   "approved_by_user": true
@@ -150,11 +151,13 @@ After installing, check that `models/` landed alongside `SKILL.md` in your skill
 
 **It is not a Flow replacement.** Google Flow is the creative front-end for these same models — shot-by-shot scene building, camera controls, frame-accurate editing. Flow is a web UI with no API, so when a job needs Flow-shaped tools, the skill says so and points you there instead of faking it through API calls.
 
-**It is not free.** Images are cents, but video is billed per second and a few clips add up fast. That's exactly why the approval gate exists and why the skill will never fire a video job speculatively. Watch your first day of usage.
+**It is not free.** Images are cents each, but they're not zero, and video is billed per second and a few clips add up fast. That's exactly why the approval gate covers every paid call, not just video, and why the skill will never fire one speculatively. Watch your first day of usage.
 
 **It is not multi-provider.** No Kling, no Seedance, no Sora, no fallback routing across aggregators. That's a deliberate trade: one auth path and first-day access to Gemini features, at the cost of model breadth. If you need non-Google models behind one key, look at Higgsfield-style wrappers instead — different tool, different trade.
 
-**The preview model IDs will change.** `gemini-3-pro-image-preview` and `gemini-omni-flash-preview` are preview names. If a call returns "model not found," check the [Gemini API docs](https://ai.google.dev/gemini-api/docs) for the current ID and update the recipe file. That's the only maintenance this system needs.
+**It does not guarantee reproducible output.** No model here documents a seed parameter on Google's Interactions API. A rerun is a fresh, non-deterministic generation, not a repeat — the sidecar exists so you can reuse the exact prompt and references rather than promising pixel-identical results.
+
+**Model IDs move on Google's schedule, not this one's.** `gemini-3-pro-image-preview` was already deprecated and shut down in favor of the GA `gemini-3-pro-image`; `gemini-omni-flash-preview` is still a preview name and could move next. If a call returns "model not found," check the [Gemini API docs](https://ai.google.dev/gemini-api/docs) for the current ID and update the recipe file. That's the only maintenance this system needs.
 
 ## Security
 

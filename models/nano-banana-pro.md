@@ -4,51 +4,52 @@ Google's highest-quality image model. Strong at composition with multiple refere
 
 | Field | Value |
 |---|---|
-| Model ID | `gemini-3-pro-image-preview` |
+| Model ID | `gemini-3-pro-image` |
 | Provider | Gemini API (Google AI Studio key) |
+| API | Interactions API — `client.interactions.create` |
 | Method | Sync — one call, one reply |
 | Type | Image |
 | API key | `GEMINI_API_KEY` env var |
 | Docs | https://ai.google.dev/gemini-api/docs/image-generation |
-| Cost | ~$0.13-0.30 per 1K-4K image depending on resolution |
+| Cost | Billable per call — quote current pricing from https://ai.google.dev/gemini-api/docs/pricing and get approval before every call, not just video (see SKILL.md, Rules) |
+
+`gemini-3-pro-image-preview` was deprecated 2026-05-28 and shut down 2026-06-25. `gemini-3-pro-image` is the current GA replacement — re-check the docs link above before relying on this ID, since Google rotates preview/GA names on its own schedule.
 
 ## Request (Python, `google-genai` SDK)
 
 ```python
 from google import genai
-from google.genai import types
+import base64
 
 client = genai.Client()
 
-parts = []
+input_parts = [{"type": "text", "text": prompt}]
 for ref_path in reference_images:  # up to 14 supported here
-    parts.append(types.Part.from_bytes(
-        data=open(ref_path, "rb").read(),
-        mime_type="image/png",
-    ))
-parts.append(types.Part.from_text(prompt))
+    with open(ref_path, "rb") as f:
+        input_parts.append({
+            "type": "image",
+            "data": base64.b64encode(f.read()).decode("utf-8"),
+            "mime_type": "image/png",
+        })
 
-response = client.models.generate_content(
-    model="gemini-3-pro-image-preview",
-    contents=[{"role": "user", "parts": parts}],
-    config=types.GenerateContentConfig(
-        response_modalities=["IMAGE", "TEXT"],
-        seed=seed,                 # always set one — random int if the user doesn't care — and log it in the sidecar
-        image_config=types.ImageConfig(
-            image_size="2K",       # 1K | 2K | 4K
-            aspect_ratio="16:9",
-        ),
-    ),
+interaction = client.interactions.create(
+    model="gemini-3-pro-image",
+    input=input_parts,
+    response_format={
+        "type": "image",
+        "image_size": "2K",       # 1K | 2K | 4K
+        "aspect_ratio": "16:9",
+    },
 )
 ```
 
 ## Response handling
 
-Same shape as Nano Banana 2 Lite — see that recipe for the full save snippet. Find the part with `inline_data`, write its `data` to disk **as-is** (already raw bytes — never base64-decode it again), verify the file exists and is non-empty **before** writing the sidecar. Text-only response means the generation failed: surface the text, save nothing, log nothing. Use `response.usage_metadata` for exact cost if needed.
+Same shape as Nano Banana 2 Lite — see that recipe for the full save snippet. Decode `output_image.data` with `base64.b64decode` and write it to disk, verify the file exists and is non-empty **before** writing the sidecar. A text-only response means the generation failed: surface the text, save nothing, log nothing.
 
 ## Notes
 
-- This is a preview model — the ID can change when Google promotes it to stable. If a call 404s, check https://ai.google.dev/gemini-api/docs/image-generation for the current ID and update this file.
+- Model IDs on this tier move — Google shut down `gemini-3-pro-image-preview` in favor of the GA `gemini-3-pro-image` on 2026-06-25. If a call 404s, check https://ai.google.dev/gemini-api/docs/image-generation for the current ID and update this file.
 - Worth the extra cost specifically for: text-heavy compositions, multi-image fusion, character consistency across a series. For a simple single-subject image, Lite is usually good enough — don't upgrade by default.
 - This is the series tier. For images that must match each other (a character across scenes, a product line, episode covers), pass the approved first image of the series as one of the references in every subsequent call — refs anchor consistency far harder than a repeated description does.
-- Seed repeatability is best-effort: same seed + prompt + refs + config lands very close, not guaranteed pixel-identical. Hold `image_size` and `aspect_ratio` fixed across reruns — changing either re-rolls the composition regardless of seed.
+- No `seed` or reproducibility parameter is documented for this model on the Interactions API. Hold `image_size` and `aspect_ratio` fixed across reruns for a similar look — changing either re-rolls the composition — and log the response `id` for potential stateful chaining (see SKILL.md, Determinism & coherence).

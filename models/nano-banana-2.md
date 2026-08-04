@@ -6,50 +6,49 @@ Google's generalist image model — the middle tier between Lite and Pro. Notice
 |---|---|
 | Model ID | `gemini-3.1-flash-image` |
 | Provider | Gemini API (Google AI Studio key) |
+| API | Interactions API — `client.interactions.create` |
 | Method | Sync — one call, one reply |
 | Type | Image |
 | API key | `GEMINI_API_KEY` env var |
-| Docs | https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-image |
-| Cost | ~$0.05 (512px) / $0.07 (1K) / $0.10 (2K) / $0.15 (4K) per image |
+| Docs | https://ai.google.dev/gemini-api/docs/image-generation |
+| Cost | Billable per call — quote current pricing from https://ai.google.dev/gemini-api/docs/pricing and get approval before every call, not just video (see SKILL.md, Rules) |
 
 ## Request (Python, `google-genai` SDK)
 
 ```python
 from google import genai
-from google.genai import types
+import base64
 
 client = genai.Client()  # reads GEMINI_API_KEY from env
 
-parts = []
+input_parts = [{"type": "text", "text": prompt}]
 for ref_path in reference_images:  # keep it to a handful here
-    parts.append(types.Part.from_bytes(
-        data=open(ref_path, "rb").read(),
-        mime_type="image/png",
-    ))
-parts.append(types.Part.from_text(prompt))
+    with open(ref_path, "rb") as f:
+        input_parts.append({
+            "type": "image",
+            "data": base64.b64encode(f.read()).decode("utf-8"),
+            "mime_type": "image/png",
+        })
 
-response = client.models.generate_content(
+interaction = client.interactions.create(
     model="gemini-3.1-flash-image",
-    contents=[{"role": "user", "parts": parts}],
-    config=types.GenerateContentConfig(
-        response_modalities=["IMAGE", "TEXT"],
-        seed=seed,                 # always set one — random int if the user doesn't care — and log it in the sidecar
-        image_config=types.ImageConfig(
-            image_size="1K",       # 512 | 1K | 2K | 4K
-            aspect_ratio="16:9",   # 1:1, 16:9, 9:16, 4:3, 3:4, 21:9, etc.
-        ),
-    ),
+    input=input_parts,
+    response_format={
+        "type": "image",
+        "image_size": "1K",       # 512px | 1K | 2K | 4K
+        "aspect_ratio": "16:9",   # 1:1, 16:9, 9:16, 4:3, 3:4, 21:9, etc.
+    },
 )
 ```
 
 ## Response handling
 
-Same shape as Nano Banana 2 Lite — see that recipe for the full save snippet. The short version: find the part with `inline_data`, write its `data` to disk **as-is** (it's already raw bytes — base64-decoding it again corrupts the file), and verify the file exists and is non-empty **before** writing the sidecar. If only `text` parts came back, the generation failed — surface that text to the user, save nothing, log nothing. `response.usage_metadata` carries token counts — image output is billed per token ($60/1M as of mid-2026), so this gives exact cost when the ballpark isn't enough.
+Same shape as Nano Banana 2 Lite — see that recipe for the full save snippet. The short version: decode `output_image.data` with `base64.b64decode` and write it to disk, and verify the file exists and is non-empty **before** writing the sidecar. If `output_image` is empty and only `output_text` came back, the generation failed — surface that text to the user, save nothing, log nothing.
 
 ## Notes
 
 - Don't draft here — Lite is still the iteration tier. Come to this model with a picked draft, or when a single-pass job needs readable on-image text that Lite garbles.
-- A Lite draft's seed means nothing to this model — the coherence lever when promoting a draft is the draft itself: pass the picked image as a reference alongside the original prompt, so the final is anchored to approved pixels instead of a fresh roll of the same words.
-- Seed repeatability is best-effort: same seed + prompt + refs + config lands very close, not guaranteed pixel-identical. Hold `image_size` and `aspect_ratio` fixed across reruns — changing either re-rolls the composition regardless of seed.
+- No `seed` or reproducibility parameter is documented for this model on the Interactions API — a Lite draft's identity doesn't carry forward either way. The coherence lever when promoting a draft is the draft itself: pass the picked image as a reference alongside the original prompt, so the final is anchored to approved pixels instead of a fresh roll of the same words.
+- Log the response `id` in the sidecar for potential stateful chaining (see SKILL.md, Determinism & coherence).
 - Keep reference images to a handful. Large multi-image fusion (up to 14 refs) and consistent characters across a series are what Nano Banana Pro is for — don't force them through this model.
-- Pricing above is from https://ai.google.dev/gemini-api/docs/pricing — check it before quoting, these numbers move.
+- Pricing moves — check https://ai.google.dev/gemini-api/docs/pricing before quoting rather than trusting any number cached from a previous session.
