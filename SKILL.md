@@ -25,14 +25,14 @@ Calls Google's Gemini media models directly through the Gemini API — no third-
 
 `gemini-3-pro-image-preview` was deprecated 2026-05-28 and shut down 2026-06-25 — `gemini-3-pro-image` is its GA replacement. Model IDs move on Google's schedule, not this skill's; always read the recipe file rather than trusting this table from memory.
 
-Rough costs (check the recipe files for current numbers — these move):
+Rough costs, Standard (sync) tier as of August 2026 — re-check https://ai.google.dev/gemini-api/docs/pricing before quoting, these move:
 
 | Job | Ballpark |
 |---|---|
-| Draft image (Lite) | $0.03-0.05 |
-| Standard image (Nano Banana 2) | $0.07-0.15 |
-| Quality image (Pro) | $0.13-0.30 |
-| Video, per second | quote from docs — this is what the approval gate is for |
+| Draft image (Lite) | ~$0.03 (1K) |
+| Standard image (Nano Banana 2) | $0.05-0.15 (0.5K-4K) |
+| Quality image (Pro) | $0.13-0.24 (1K/2K-4K) |
+| Video, per second | ~$0.10 (720p) — quote from docs, this is what the approval gate is for |
 
 Every row above is billable — image generation is not free just because it's cheap. Quote current pricing and get explicit approval before any of them, not only video (see Rules).
 

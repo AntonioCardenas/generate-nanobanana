@@ -20,12 +20,12 @@ Diseñado exclusivamente para Google: una sola clave de API, una sola factura y 
 
 | Tarea | Modelo | ID del Modelo | Costo Estimado |
 |---|---|---|---|
-| Imagen (borrador) | Nano Banana 2 Lite | `gemini-3.1-flash-lite-image` | $0.03–0.05 / imagen |
-| Imagen (estándar) | Nano Banana 2 | `gemini-3.1-flash-image` | $0.07–0.15 / imagen |
-| Imagen (calidad) | Nano Banana Pro | `gemini-3-pro-image` | $0.13–0.30 / imagen |
-| Video | Gemini Omni Flash | `gemini-omni-flash-preview` | facturado por segundo — cotizado previamente |
+| Imagen (borrador) | Nano Banana 2 Lite | `gemini-3.1-flash-lite-image` | ~$0.03 / imagen (1K) |
+| Imagen (estándar) | Nano Banana 2 | `gemini-3.1-flash-image` | $0.05–0.15 / imagen (0.5K–4K) |
+| Imagen (calidad) | Nano Banana Pro | `gemini-3-pro-image` | $0.13–0.24 / imagen (1K/2K–4K) |
+| Video | Gemini Omni Flash | `gemini-omni-flash-preview` | ~$0.10 / segundo (720p) — cotizado previamente |
 
-Cada llamada pasa por la Interactions API de Google (`client.interactions.create`) y todas se facturan — cotiza el precio actual y obtén aprobación antes de cualquiera de ellas, no solo antes de video. Cada modelo tiene su propio archivo de receta en `models/` que contiene la estructura exacta de la solicitud, el manejo de respuestas y las consideraciones especiales. Cuando Google lanza un mejor modelo, simplemente agregas un archivo markdown y la skill lo aprende. Nada más cambia.
+Las cifras anteriores son el precio publicado por Google para el nivel Standard (síncrono) a agosto de 2026 — ver https://ai.google.dev/gemini-api/docs/pricing. Cada llamada pasa por la Interactions API de Google (`client.interactions.create`) y todas se facturan — cotiza el precio actual y obtén aprobación antes de cualquiera de ellas, no solo antes de video. Cada modelo tiene su propio archivo de receta en `models/` que contiene la estructura exacta de la solicitud, el manejo de respuestas y las consideraciones especiales. Cuando Google lanza un mejor modelo, simplemente agregas un archivo markdown y la skill lo aprende. Nada más cambia.
 
 ## Instalación y Agentes Compatibles
 

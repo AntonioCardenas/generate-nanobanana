@@ -21,12 +21,12 @@ Google-only by design: one API key, one bill, and the newest Gemini features (Na
 
 | Task | Model | Model ID | Ballpark cost |
 |---|---|---|---|
-| Image (draft) | Nano Banana 2 Lite | `gemini-3.1-flash-lite-image` | $0.03–0.05 / image |
-| Image (standard) | Nano Banana 2 | `gemini-3.1-flash-image` | $0.07–0.15 / image |
-| Image (quality) | Nano Banana Pro | `gemini-3-pro-image` | $0.13–0.30 / image |
-| Video | Gemini Omni Flash | `gemini-omni-flash-preview` | billed per second — always quoted first |
+| Image (draft) | Nano Banana 2 Lite | `gemini-3.1-flash-lite-image` | ~$0.03 / image (1K) |
+| Image (standard) | Nano Banana 2 | `gemini-3.1-flash-image` | $0.05–0.15 / image (0.5K–4K) |
+| Image (quality) | Nano Banana Pro | `gemini-3-pro-image` | $0.13–0.24 / image (1K/2K–4K) |
+| Video | Gemini Omni Flash | `gemini-omni-flash-preview` | ~$0.10 / second (720p) — always quoted first |
 
-Every call above goes through Google's Interactions API (`client.interactions.create`) and every one of them is billable — quote current pricing and get approval before any of them, not only video. Each model has its own recipe file in `models/` holding the exact request shape, response handling, and gotchas. When Google ships a better model, you add one markdown file and the skill learns it. Nothing else changes.
+Figures above are Google's published Standard (synchronous) tier pricing as of August 2026 — see https://ai.google.dev/gemini-api/docs/pricing. Every call above goes through Google's Interactions API (`client.interactions.create`) and every one of them is billable — quote current pricing and get approval before any of them, not only video. Each model has its own recipe file in `models/` holding the exact request shape, response handling, and gotchas. When Google ships a better model, you add one markdown file and the skill learns it. Nothing else changes.
 
 ## Install & Supported Agents
 
