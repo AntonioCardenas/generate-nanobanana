@@ -2,31 +2,53 @@
 
 *Read this in other languages: [English](README.md), [Español](README.es.md).*
 
-> AI image &amp; video generation skill using Google Gemini (Nano Banana 2 Lite, Nano Banana 2, Nano Banana Pro, Gemini Omni Flash). Supported on **Antigravity**, **Antigravity CLI**, **Claude Code**, **Cursor**, and other agent environments. Cost gates before paid runs, real reference images, a prompt log beside every file.
+[![License: MIT](https://img.shields.io/github/license/AntonioCardenas/generate-nanobanana?color=blue)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/AntonioCardenas/generate-nanobanana?style=flat&color=yellow)](https://github.com/AntonioCardenas/generate-nanobanana/stargazers)
+[![Last commit](https://img.shields.io/github/last-commit/AntonioCardenas/generate-nanobanana)](https://github.com/AntonioCardenas/generate-nanobanana/commits/main)
+[![Install via skills CLI](https://img.shields.io/badge/install-npx%20skills%20add-brightgreen)](https://github.com/vercel-labs/skills)
+[![Featured in Agentic Awesome Skills](https://img.shields.io/badge/Featured%20in-Agentic%20Awesome%20Skills-8A2BE2)](https://github.com/sickn33/agentic-awesome-skills)
+
+> AI image, video &amp; visual reasoning skill using Google Gemini (Nano Banana 2 Lite, Nano Banana 2.1, Nano Banana Pro, Gemini Omni Flash, Gemini 4 Argon). Supported on **Antigravity**, **Antigravity CLI**, **Claude Code**, **Cursor**, and other agent environments. Cost gates before paid runs, real reference images, a prompt log beside every file.
 > 
 
-This skill helps to generate consistent on-brand images that can help you to generate consistent images and videos for your projects, like websites and others.
-
-One command that generates images and videos through Google's Gemini media models, never surprises you with a bill, and files every output — with the exact prompt that made it — in one folder.
-
-You say "generate a thumbnail of X." The skill routes the job to the right model (cheap draft, quality final, or video), loads your real reference images instead of describing your logo in words, quotes the cost and waits for your go-ahead before anything runs — image or video, both are billable — saves the result flat into a `generations/` folder right in your workspace, and writes a small JSON note beside it recording the prompt, model, and cost. Three weeks later, when you look at a file and think "what prompt made THIS?", the answer is sitting right next to it.
-
-Google-only by design: one API key, one bill, and the newest Gemini features (Nano Banana Pro's multi-image fusion, Omni Flash's synced audio) the day they ship — no aggregator in the middle.
+One command that generates images, videos, storyboards, and code visuals through Google's Gemini media and reasoning models, never surprises you with a bill, and files every output — with the exact prompt that made it — in one folder.
 
 [![Nano Banana Y2K Poster Example](nanobanana_y2k_poster.png)](nanobanana_y2k_poster.png)
 *Example output generated with Nano Banana Pro: Y2K poster aesthetic.*
 
+**Why people reach for this instead of calling the API directly:**
+
+- **Approval gate on every paid call** — image, video, or reasoning, the skill quotes the model and expected cost first and waits for your go-ahead. No surprise bills.
+- **Real references, never descriptions** — your actual logo, face, or style shots get loaded in, not approximated from text.
+- **A prompt log beside every file** — same basename, `.json` sidecar, so "what prompt made this?" always has an answer, months later.
+- **Draft cheap, finish pretty** — routes between Lite, Nano Banana 2.1, Pro, and Gemini 4 Argon automatically depending on whether you're iterating, finishing, or storyboarding.
+- **Google-only, day-one features** — one API key, one bill, and Nano Banana 2.1's panoramic ratios, Nano Banana Pro's multi-image fusion, Omni Flash's 1080p/4K upscaling &amp; synced audio, or Gemini 4 Argon's 1M-token storyboard reasoning the day they ship, no aggregator in the middle.
+- **Works where you already work** — Antigravity, Antigravity CLI, Claude Code, Cursor, and any agent that reads skill files.
+
+## Table of Contents
+
+- [Models](#models)
+- [Install & Supported Agents](#install--supported-agents)
+- [How a generation flows](#how-a-generation-flows)
+- [Reference sets — "generate on brand"](#reference-sets--generate-on-brand)
+- [The guardrails](#the-guardrails)
+- [What's here](#whats-here)
+- [What this is not](#what-this-is-not)
+- [Security](#security)
+- [Star History](#star-history)
+- [License](#license)
 
 ## Models
 
 | Task | Model | Model ID | Ballpark cost |
 |---|---|---|---|
-| Image (draft) | Nano Banana 2 Lite | `gemini-3.1-flash-lite-image` | ~$0.03 / image (1K) |
-| Image (standard) | Nano Banana 2 | `gemini-3.1-flash-image` | $0.05–0.15 / image (0.5K–4K) |
-| Image (quality) | Nano Banana Pro | `gemini-3-pro-image` | $0.13–0.24 / image (1K/2K–4K) |
-| Video | Gemini Omni Flash | `gemini-omni-flash-preview` | ~$0.10 / second (720p) — always quoted first |
+| Image (draft) | Nano Banana 2 Lite | `gemini-3.1-flash-lite-image` | ~$0.034 / image (1K only) |
+| Image (standard) | Nano Banana 2.1 | `gemini-nano-banana-2.1` | $0.034–0.113 / image (1K–4K) |
+| Image (quality) | Nano Banana Pro | `gemini-3-pro-image` | $0.134–0.24 / image (1K/2K–4K) |
+| Video | Gemini Omni Flash | `gemini-omni-1.1-flash` | ~$0.10 / second (720p) — always quoted first |
+| Storyboard / Code visuals | Gemini 4 Argon | `gemini-4-argon` | $2/1M input, $10/1M output+thinking through Nov 30, 2026 ($4 / $20 starting Dec 1, 2026) |
 
-Figures above are Google's published Standard (synchronous) tier pricing as of August 2026 — see https://ai.google.dev/gemini-api/docs/pricing. Every call above goes through Google's Interactions API (`client.interactions.create`) and every one of them is billable — quote current pricing and get approval before any of them, not only video. Each model has its own recipe file in `models/` holding the exact request shape, response handling, and gotchas. When Google ships a better model, you add one markdown file and the skill learns it. Nothing else changes.
+Figures above are Google's published Standard (synchronous) tier pricing as of November 2026 — see https://ai.google.dev/gemini-api/docs/pricing. Every call above goes through Google's Interactions API (`client.interactions.create`) and every one of them is billable — quote current pricing and get approval before any of them, not only video. Each model has its own recipe file in `models/` holding the exact request shape, response handling, and gotchas. When Google ships a better model, you add one markdown file and the skill learns it. Nothing else changes.
 
 ## Install & Supported Agents
 
@@ -103,7 +125,7 @@ Two ways to register a folder:
 - **Link** — records the folder's path in `generations/refs/sets.json`. Images are read live from where they already live, so new assets show up without re-registering.
 - **Import** — copies the images into `generations/refs/<name>/` for a stable snapshot that survives the original folder moving.
 
-`on brand` is shorthand for the set named `brand`; any other set works via `/generate frf <set> …` (a raw folder path works there too, and the spoken form "generate from reference `<set>`" still routes the same). The skill picks the images relevant to the job rather than dumping the whole folder — up to each model's reference limit (2 on Lite, 14 on Pro) — and the sidecar JSON records exactly which files were sent.
+`on brand` is shorthand for the set named `brand`; any other set works via `/generate frf <set> …` (a raw folder path works there too, and the spoken form "generate from reference `<set>`" still routes the same). The skill picks the images relevant to the job rather than dumping the whole folder — up to each model's reference limit (1-2 for fast drafting on Lite, up to 14 on Nano Banana 2.1 and Pro) — and the sidecar JSON records exactly which files were sent.
 
 A set can also carry a `style.md` — a short, fixed description of the set's look (palette, lighting, camera, rendering style). When it exists, its text is prepended **verbatim** to every prompt generated from that set, so a series shares one visual language instead of drifting a little with each rephrasing.
 
@@ -113,8 +135,8 @@ First run with no folder yet? The skill creates `generations/refs/brand/`, tells
 
 Almost everything in this skill is a constraint, and the constraints are what make it usable daily rather than what limits it:
 
-- **Quote before every paid call — image or video.** Video is the expensive lane, but images aren't free either. The skill states model and expected dollars (plus duration, for video), then waits for an explicit go. One approval covers exactly one run.
-- **Draft cheap, finish pretty.** Iterate on Nano Banana 2 Lite; rerun your favourite on Nano Banana 2, or on Pro when the job needs multi-image fusion or dense on-image text. You stop paying premium prices for throwaway drafts.
+- **Quote before every paid call — image, video, or reasoning.** Video is the expensive lane, but images and frontier reasoning aren't free either. The skill states model and expected dollars (plus duration, for video), then waits for an explicit go. One approval covers exactly one run.
+- **Draft cheap, finish pretty.** Iterate on Nano Banana 2 Lite; rerun your favourite on Nano Banana 2.1 (with 2K/4K, panoramic ratios, and up to 4-character / 10-object fusion), or on Pro when the job needs 5-character consistency, dedicated style references, or dense layout reasoning. Use Gemini 4 Argon when you need multi-shot storyboards, pre-planned infographic copy, or SVG / Three.js code visuals. You stop paying premium prices for throwaway drafts.
 - **Real refs, never described.** If a needed reference image is missing, the skill stops and asks for it instead of approximating your brand from a text description.
 - **Logged, so a rerun starts from the truth, not memory.** No model here documents a seed parameter — nothing promises pixel-identical repeats — so the sidecar logs the exact prompt, references, and response ID instead. "Same image but change the headline" reuses that logged prompt and those references and changes only that one thing, instead of re-rolling the whole composition from a half-remembered description. For series that must match (a character, a product line), the approved first image goes back in as a reference for every image after it.
 - **One flat folder, in your workspace.** Every output lands in a `generations/` folder at the root of the project you're working in, no subfolders — your images live next to the code that uses them, not off in your home directory. Any gallery, script, or plain folder search can read the project's whole media library with zero setup. (Running outside any project? It falls back to `~/generations` so files still have one predictable home.)
@@ -139,10 +161,11 @@ Almost everything in this skill is a constraint, and the constraints are what ma
 ```
 SKILL.md                          the brain: routing table, rules, logging contract
 models/
-  nano-banana-2-lite.md           draft image recipe — sync, cheap, the default
-  nano-banana-2.md                standard image recipe — the generalist finals tier
-  nano-banana-pro.md              quality image recipe — up to 14 reference images
-  gemini-omni-flash.md            video recipe — async submit-then-poll, synced audio
+  nano-banana-2-lite.md           draft image recipe — sync, 1K, sub-2s latency, the default
+  nano-banana-2.md                standard image recipe — Nano Banana 2.1 (1K-4K, panoramic, up to 14 refs)
+  nano-banana-pro.md              quality image recipe — up to 14 reference images (5 chars, 6 objects, 3 style)
+  gemini-omni-flash.md            video recipe — Gemini Omni 1.1 Flash (360p-4K, interpolation, extension, audio)
+  gemini-4-argon.md               reasoning & code visuals recipe — storyboards, copy planning, SVG/Three.js (1M context)
 ```
 
 After installing, check that `models/` landed alongside `SKILL.md` in your skills directory. The routing table points at those recipe files, so if only `SKILL.md` came across, generations will fail at the "read the recipe" step.
@@ -155,9 +178,9 @@ After installing, check that `models/` landed alongside `SKILL.md` in your skill
 
 **It is not multi-provider.** No Kling, no Seedance, no Sora, no fallback routing across aggregators. That's a deliberate trade: one auth path and first-day access to Gemini features, at the cost of model breadth. If you need non-Google models behind one key, look at Higgsfield-style wrappers instead — different tool, different trade.
 
-**It does not guarantee reproducible output.** No model here documents a seed parameter on Google's Interactions API. A rerun is a fresh, non-deterministic generation, not a repeat — the sidecar exists so you can reuse the exact prompt and references rather than promising pixel-identical results.
+**It does not guarantee reproducible output.** No model here documents a seed parameter on Google's Interactions API. A rerun is a fresh, non-deterministic generation, not a repeat — the sidecar exists so you can reuse the exact prompt and references (or chain statefully via `previous_interaction_id`) rather than promising pixel-identical results.
 
-**Model IDs move on Google's schedule, not this one's.** `gemini-3-pro-image-preview` was already deprecated and shut down in favor of the GA `gemini-3-pro-image`; `gemini-omni-flash-preview` is still a preview name and could move next. If a call returns "model not found," check the [Gemini API docs](https://ai.google.dev/gemini-api/docs) for the current ID and update the recipe file. That's the only maintenance this system needs.
+**Model IDs move on Google's schedule, not this one's.** `gemini-3.1-flash-image` (Nano Banana 2) was deprecated in favor of `gemini-nano-banana-2.1`, `gemini-omni-flash-preview` and `veo-3.1-*-preview` were shut down in favor of the GA `gemini-omni-1.1-flash`, and `gemini-3-pro-image-preview` was shut down in favor of `gemini-3-pro-image`. If a call returns "model not found," check the [Gemini API docs](https://ai.google.dev/gemini-api/docs) for the current ID and update the recipe file. That's the only maintenance this system needs.
 
 ## Security
 
@@ -169,6 +192,12 @@ Marketplaces like [skills.sh](https://skills.sh) run automated audits (with Gen,
 - **File writes** — confined to the workspace: `generations/` and `generations/refs/`. Nothing outside the current project, and nothing related to key setup.
 
 The exact request shape behind every call is in `models/*.md` if you'd rather verify it yourself than take this list on faith.
+
+## Star History
+
+If this saves you a surprise bill or a lost prompt, a star helps other people building on Gemini's media models find it too.
+
+[![Star History Chart](https://api.star-history.com/svg?repos=AntonioCardenas/generate-nanobanana&type=Date)](https://star-history.com/#AntonioCardenas/generate-nanobanana&Date)
 
 ## License
 

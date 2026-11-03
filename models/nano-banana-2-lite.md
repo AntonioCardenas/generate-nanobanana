@@ -1,6 +1,6 @@
 # Nano Banana 2 Lite
 
-Fastest, cheapest Gemini image model. Default for drafts and iteration — not optimized for multiple reference inputs or multi-turn sequential editing, so switch to Nano Banana Pro if a job needs more than 1-2 references or careful multi-step edits.
+Fastest, cheapest Gemini image model (sub-2-second latency target). Default for drafts, rapid iteration, and quick local edits — switch to Nano Banana 2.1 or Nano Banana Pro when a job needs 2K/4K output, multi-character consistency, search grounding, or dedicated style references.
 
 | Field | Value |
 |---|---|
@@ -11,7 +11,7 @@ Fastest, cheapest Gemini image model. Default for drafts and iteration — not o
 | Type | Image |
 | API key | `GEMINI_API_KEY` env var |
 | Docs | https://ai.google.dev/gemini-api/docs/image-generation |
-| Cost | Billable per call — quote current pricing from https://ai.google.dev/gemini-api/docs/pricing and get approval before every call, not just video (see SKILL.md, Rules) |
+| Cost | ~$0.034 / 1K image ($30 / 1M image output tokens; $0.25 / 1M input tokens) — quote current pricing from https://ai.google.dev/gemini-api/docs/pricing and get approval before every call (see SKILL.md, Rules) |
 
 ## Request (Python, `google-genai` SDK)
 
@@ -22,7 +22,7 @@ import base64
 client = genai.Client()  # reads GEMINI_API_KEY from env
 
 input_parts = [{"type": "text", "text": prompt}]
-for ref_path in reference_images:  # 0-2 images, keep it light on this model
+for ref_path in reference_images:  # keep to 0-2 images for fast drafting (endpoint accepts up to 14 object refs)
     with open(ref_path, "rb") as f:
         input_parts.append({
             "type": "image",
@@ -33,11 +33,24 @@ for ref_path in reference_images:  # 0-2 images, keep it light on this model
 interaction = client.interactions.create(
     model="gemini-3.1-flash-lite-image",
     input=input_parts,
+    generation_config={
+        "thinking_level": "minimal",  # "minimal" (default) | "high"
+    },
     response_format={
         "type": "image",
-        "image_size": "1K",       # 512px | 1K | 2K | 4K
-        "aspect_ratio": "16:9",   # 1:1, 16:9, 9:16, 4:3, 3:4, 21:9, etc.
+        "image_size": "1K",       # 1K (1024px) only — 2K and 4K are unsupported on Lite
+        "aspect_ratio": "16:9",   # 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, 4:5, 5:4, 21:9, etc.
     },
+)
+```
+
+### Multi-turn local edit
+```python
+edited = client.interactions.create(
+    model="gemini-3.1-flash-lite-image",
+    previous_interaction_id=interaction.id,
+    input="Swap the background to a warm studio gradient; keep everything else identical.",
+    response_format={"type": "image", "image_size": "1K", "aspect_ratio": "16:9"},
 )
 ```
 
@@ -65,8 +78,8 @@ Two rules that are not optional:
 
 ## Notes
 
-- No `seed` or reproducibility parameter is documented for this model on the Interactions API — treat every call as non-deterministic. For "same image but change X," reuse the exact prompt and references from the sidecar and change only the delta (see SKILL.md, Determinism & coherence).
-- Log the response `id` in the sidecar — it's what lets a later call chain onto this one via `previous_interaction_id` if that's supported for image edits; re-verify against current docs before relying on it.
-- A picked draft's identity does not transfer to Nano Banana 2 or Pro. When promoting a picked draft, pass the draft image itself as a reference in the final call (see SKILL.md, Determinism & coherence).
-- Rate limits are generous on this tier but still real — one request at a time per the skill's Rules section, not parallel batches.
-- If a request needs on-image text (signage, packaging, readable UI copy), this model is weaker at it than Nano Banana 2 or Pro — flag that to the user rather than silently producing garbled text.
+- **`image_size` is `"1K"` only.** `2K` and `4K` are unsupported on `gemini-3.1-flash-lite-image`. When a user wants 2K or 4K, route to Nano Banana 2.1 (`gemini-nano-banana-2.1`) or Nano Banana Pro (`gemini-3-pro-image`).
+- **Thinking levels:** Supports `"minimal"` (default, fastest) and `"high"`. Google Search grounding is not supported on Lite.
+- **Determinism & stateful edits:** No `seed` parameter is documented on the Interactions API. Log `interaction.id` in `response_id` on every sidecar so follow-up tweaks can chain statefully via `previous_interaction_id` or reuse the exact prompt and references (see SKILL.md, Determinism & coherence).
+- **Promoting a draft:** A picked draft's identity does not transfer automatically to Nano Banana 2.1 or Pro. Pass the approved Lite draft image itself as a reference in the final call.
+- If a request needs dense on-image text (infographics, packaging, readable UI copy), upgrade to Nano Banana 2.1 or Pro — Lite is weaker at typography.

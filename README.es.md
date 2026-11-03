@@ -2,30 +2,52 @@
 
 *Leer en otros idiomas: [English](README.md), [Español](README.es.md).*
 
-> Skill para la generación de imágenes y videos con IA usando Google Gemini (Nano Banana 2 Lite, Nano Banana 2, Nano Banana Pro, Gemini Omni Flash). Compatible con **Antigravity**, **Antigravity CLI**, **Claude Code**, **Cursor** y otros entornos de agentes. Control de costos antes de ejecuciones de pago, imágenes de referencia reales y un registro de prompts al lado de cada archivo.
+[![License: MIT](https://img.shields.io/github/license/AntonioCardenas/generate-nanobanana?color=blue)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/AntonioCardenas/generate-nanobanana?style=flat&color=yellow)](https://github.com/AntonioCardenas/generate-nanobanana/stargazers)
+[![Last commit](https://img.shields.io/github/last-commit/AntonioCardenas/generate-nanobanana)](https://github.com/AntonioCardenas/generate-nanobanana/commits/main)
+[![Instalación vía skills CLI](https://img.shields.io/badge/instalar-npx%20skills%20add-brightgreen)](https://github.com/vercel-labs/skills)
+[![Destacado en Agentic Awesome Skills](https://img.shields.io/badge/Destacado%20en-Agentic%20Awesome%20Skills-8A2BE2)](https://github.com/sickn33/agentic-awesome-skills)
 
-Esta skill ayuda a generar imágenes consistentes con la marca (on-brand) que pueden ayudarte a generar imágenes y videos consistentes para tus proyectos, como sitios web y otros.
+> Skill para la generación de imágenes, videos y razonamiento visual con IA usando Google Gemini (Nano Banana 2 Lite, Nano Banana 2.1, Nano Banana Pro, Gemini Omni Flash, Gemini 4 Argon). Compatible con **Antigravity**, **Antigravity CLI**, **Claude Code**, **Cursor** y otros entornos de agentes. Control de costos antes de ejecuciones de pago, imágenes de referencia reales y un registro de prompts al lado de cada archivo.
 
-Un solo comando que genera imágenes y videos a través de los modelos de medios de Gemini de Google, que nunca te sorprende con una factura inesperada y archiva cada resultado —con el prompt exacto que lo generó— en una sola carpeta.
-
-Tú dices "genera una miniatura de X". La skill redirige el trabajo al modelo correcto (borrador económico, versión final de calidad o video), carga tus imágenes de referencia reales en lugar de describir tu logotipo con palabras, te da una cotización del costo y espera tu aprobación antes de ejecutar cualquier tarea — imagen o video, ambas se facturan —, guarda el resultado directamente en una carpeta `generations/` dentro de tu workspace y escribe una pequeña nota JSON al lado que registra el prompt, el modelo y el costo. Tres semanas después, cuando miras un archivo y piensas "¿qué prompt generó ESTO?", la respuesta estará allí mismo, justo al lado.
-
-Diseñado exclusivamente para Google: una sola clave de API, una sola factura y las características más recientes de Gemini (fusión de múltiples imágenes de Nano Banana Pro, audio sincronizado de Omni Flash) el mismo día de su lanzamiento — sin intermediarios.
+Un solo comando que genera imágenes, videos, storyboards y visuales por código a través de los modelos de medios y razonamiento de Gemini de Google, que nunca te sorprende con una factura inesperada y archiva cada resultado —con el prompt exacto que lo generó— en una sola carpeta.
 
 [![Ejemplo de Póster Y2K Nano Banana](nanobanana_y2k_poster.png)](nanobanana_y2k_poster.png)
 *Ejemplo de resultado generado con Nano Banana Pro: estética de póster Y2K.*
 
+**Por qué la gente prefiere esto en lugar de llamar a la API directamente:**
+
+- **Control de aprobación en cada llamada de pago** — imagen, video o razonamiento, la skill cotiza el modelo y el costo esperado primero y espera tu aprobación. Sin facturas sorpresa.
+- **Referencias reales, nunca descritas** — tu logotipo, rostro o estilo real se cargan tal cual, no se aproximan a partir de una descripción de texto.
+- **Un registro de prompt al lado de cada archivo** — mismo nombre base, sidecar `.json`, así que "¿qué prompt generó esto?" siempre tiene respuesta, meses después.
+- **Borrador económico, acabado de calidad** — alterna automáticamente entre Lite, Nano Banana 2.1, Pro y Gemini 4 Argon según si estás iterando, finalizando o armando storyboards.
+- **Exclusivo para Google, funciones desde el primer día** — una sola clave de API, una sola factura, y las relaciones de aspecto panorámicas de Nano Banana 2.1, la fusión de múltiples imágenes de Nano Banana Pro, el escalado 1080p/4K y audio sincronizado de Omni Flash, o el razonamiento de storyboards de 1M de tokens de Gemini 4 Argon el mismo día de su lanzamiento, sin intermediarios.
+- **Funciona donde ya trabajas** — Antigravity, Antigravity CLI, Claude Code, Cursor y cualquier agente que lea archivos de skill.
+
+## Tabla de Contenidos
+
+- [Modelos](#modelos)
+- [Instalación y Agentes Compatibles](#instalación-y-agentes-compatibles)
+- [Cómo fluye una generación](#cómo-fluye-una-generación)
+- [Conjuntos de referencia — "generate on brand"](#conjuntos-de-referencia--generate-on-brand)
+- [Las reglas y límites (Guardrails)](#las-reglas-y-límites-guardrails)
+- [Qué hay aquí](#qué-hay-aquí)
+- [Lo que esto no es](#lo-que-esto-no-es)
+- [Seguridad](#seguridad)
+- [Star History](#star-history)
+- [Licencia](#licencia)
 
 ## Modelos
 
 | Tarea | Modelo | ID del Modelo | Costo Estimado |
 |---|---|---|---|
-| Imagen (borrador) | Nano Banana 2 Lite | `gemini-3.1-flash-lite-image` | ~$0.03 / imagen (1K) |
-| Imagen (estándar) | Nano Banana 2 | `gemini-3.1-flash-image` | $0.05–0.15 / imagen (0.5K–4K) |
-| Imagen (calidad) | Nano Banana Pro | `gemini-3-pro-image` | $0.13–0.24 / imagen (1K/2K–4K) |
-| Video | Gemini Omni Flash | `gemini-omni-flash-preview` | ~$0.10 / segundo (720p) — cotizado previamente |
+| Imagen (borrador) | Nano Banana 2 Lite | `gemini-3.1-flash-lite-image` | ~$0.034 / imagen (solo 1K) |
+| Imagen (estándar) | Nano Banana 2.1 | `gemini-nano-banana-2.1` | $0.034–0.113 / imagen (1K–4K) |
+| Imagen (calidad) | Nano Banana Pro | `gemini-3-pro-image` | $0.134–0.24 / imagen (1K/2K–4K) |
+| Video | Gemini Omni Flash | `gemini-omni-1.1-flash` | ~$0.10 / segundo (720p) — cotizado previamente |
+| Storyboard / Visuales por código | Gemini 4 Argon | `gemini-4-argon` | $2/1M entrada, $10/1M salida+thinking hasta el 30 nov 2026 ($4 / $20 desde el 1 dic 2026) |
 
-Las cifras anteriores son el precio publicado por Google para el nivel Standard (síncrono) a agosto de 2026 — ver https://ai.google.dev/gemini-api/docs/pricing. Cada llamada pasa por la Interactions API de Google (`client.interactions.create`) y todas se facturan — cotiza el precio actual y obtén aprobación antes de cualquiera de ellas, no solo antes de video. Cada modelo tiene su propio archivo de receta en `models/` que contiene la estructura exacta de la solicitud, el manejo de respuestas y las consideraciones especiales. Cuando Google lanza un mejor modelo, simplemente agregas un archivo markdown y la skill lo aprende. Nada más cambia.
+Las cifras anteriores son el precio publicado por Google para el nivel Standard (síncrono) a noviembre de 2026 — ver https://ai.google.dev/gemini-api/docs/pricing. Cada llamada pasa por la Interactions API de Google (`client.interactions.create`) y todas se facturan — cotiza el precio actual y obtén aprobación antes de cualquiera de ellas, no solo antes de video. Cada modelo tiene su propio archivo de receta en `models/` que contiene la estructura exacta de la solicitud, el manejo de respuestas y las consideraciones especiales. Cuando Google lanza un mejor modelo, simplemente agregas un archivo markdown y la skill lo aprende. Nada más cambia.
 
 ## Instalación y Agentes Compatibles
 
@@ -102,7 +124,7 @@ Dos formas de registrar una carpeta:
 - **Vincular (link)** — registra la ruta de la carpeta en `generations/refs/sets.json`. Las imágenes se leen en vivo desde donde ya están, por lo que los nuevos recursos aparecen sin volver a registrar nada.
 - **Importar (import)** — copia las imágenes a `generations/refs/<nombre>/` como una instantánea estable que sobrevive si la carpeta original se mueve.
 
-`on brand` es el atajo para el conjunto llamado `brand`; cualquier otro conjunto funciona con `/generate frf <conjunto> …` (una ruta de carpeta directa también funciona, y la forma hablada "generate from reference `<conjunto>`" se enruta igual). La skill selecciona las imágenes relevantes para el trabajo en lugar de enviar la carpeta completa — hasta el límite de referencias de cada modelo (2 en Lite, 14 en Pro) — y el JSON de registro (sidecar) documenta exactamente qué archivos se enviaron.
+`on brand` es el atajo para el conjunto llamado `brand`; cualquier otro conjunto funciona con `/generate frf <conjunto> …` (una ruta de carpeta directa también funciona, y la forma hablada "generate from reference `<conjunto>`" se enruta igual). La skill selecciona las imágenes relevantes para el trabajo en lugar de enviar la carpeta completa — hasta el límite de referencias de cada modelo (1-2 para borradores rápidos en Lite, hasta 14 en Nano Banana 2.1 y Pro) — y el JSON de registro (sidecar) documenta exactamente qué archivos se enviaron.
 
 Un conjunto también puede incluir un `style.md` — una descripción corta y fija del estilo visual del conjunto (paleta, iluminación, cámara, estilo de renderizado). Cuando existe, su texto se antepone **literalmente** a cada prompt generado desde ese conjunto, de modo que una serie comparte un solo lenguaje visual en lugar de desviarse un poco con cada reformulación.
 
@@ -112,8 +134,8 @@ Un conjunto también puede incluir un `style.md` — una descripción corta y fi
 
 Casi todo en esta skill es una restricción, y son estas restricciones las que la hacen útil en el día a día en lugar de limitarla:
 
-- **Cotización antes de cada llamada de pago — imagen o video.** El video es el flujo más costoso, pero las imágenes tampoco son gratis. La skill indica el modelo y los dólares esperados (y la duración, en video), y luego espera un consentimiento explícito. Una aprobación cubre exactamente una ejecución.
-- **Borrador económico, acabado de calidad.** Itera en Nano Banana 2 Lite; vuelve a ejecutar tu favorito en Nano Banana 2, o en Pro cuando el trabajo necesite fusión de múltiples imágenes o texto denso en la imagen. Dejas de pagar precios premium por borradores desechables.
+- **Cotización antes de cada llamada de pago — imagen, video o razonamiento.** El video es el flujo más costoso, pero las imágenes y el razonamiento de frontera tampoco son gratis. La skill indica el modelo y los dólares esperados (y la duración, en video), y luego espera un consentimiento explícito. Una aprobación cubre exactamente una ejecución.
+- **Borrador económico, acabado de calidad.** Itera en Nano Banana 2 Lite; vuelve a ejecutar tu favorito en Nano Banana 2.1 (con 2K/4K, relaciones panorámicas y fusión de hasta 4 personajes / 10 objetos), o en Pro cuando el trabajo necesite consistencia de 5 personajes, referencias dedicadas de estilo o razonamiento denso de composición. Usa Gemini 4 Argon cuando necesites storyboards de múltiples tomas, planificación de textos para infografías o visuales por código (SVG / Three.js). Dejas de pagar precios premium por borradores desechables.
 - **Referencias reales, nunca descritas.** Si falta una imagen de referencia necesaria, la skill se detiene y la solicita en lugar de aproximar tu marca a partir de una descripción de texto.
 - **Registrado, para que una repetición parta de lo real y no de la memoria.** Ningún modelo aquí documenta un parámetro de seed — nada garantiza una repetición idéntica — así que el sidecar registra el prompt exacto, las referencias y el ID de la respuesta en su lugar. "La misma imagen pero cambia el titular" reutiliza ese prompt y esas referencias registradas y cambia solo eso — en lugar de volver a sortear toda la composición a partir de una descripción a medias. Para series que deben coincidir entre sí (un personaje, una línea de productos), la primera imagen aprobada vuelve a entrar como referencia en cada imagen posterior.
 - **Una carpeta plana, en tu workspace.** Cada archivo generado se guarda en una carpeta `generations/` en la raíz del proyecto en el que estás trabajando, sin subcarpetas — tus imágenes viven junto al código que las usa, no perdidas en tu directorio home. Cualquier galería, script o búsqueda simple en la carpeta puede leer toda la biblioteca de medios del proyecto sin configuración adicional. (¿Trabajando fuera de un proyecto? Se usa `~/generations` como respaldo para que los archivos sigan teniendo un hogar predecible.)
@@ -138,10 +160,11 @@ Casi todo en esta skill es una restricción, y son estas restricciones las que l
 ```
 SKILL.md                          el cerebro: tabla de ruteo, reglas, contrato de registro
 models/
-  nano-banana-2-lite.md           receta de borrador de imagen — síncrono, económico, predeterminado
-  nano-banana-2.md                receta de imagen estándar — el nivel generalista para versiones finales
-  nano-banana-pro.md              receta de imagen de calidad — hasta 14 imágenes de referencia
-  gemini-omni-flash.md            receta de video — asíncrono (submit-then-poll), audio sincronizado
+  nano-banana-2-lite.md           receta de borrador de imagen — síncrono, 1K, latencia <2s, predeterminado
+  nano-banana-2.md                receta de imagen estándar — Nano Banana 2.1 (1K-4K, panorámico, hasta 14 refs)
+  nano-banana-pro.md              receta de imagen de calidad — hasta 14 referencias (5 personajes, 6 objetos, 3 estilo)
+  gemini-omni-flash.md            receta de video — Gemini Omni 1.1 Flash (360p-4K, interpolación, extensión, audio)
+  gemini-4-argon.md               receta de razonamiento y código visual — storyboards, copy, SVG/Three.js (contexto 1M)
 ```
 
 Después de instalar, verifica que la carpeta `models/` se haya colocado junto a `SKILL.md` en tu directorio de skills. La tabla de ruteo apunta a esos archivos de recetas, por lo que si solo se transfirió `SKILL.md`, las generaciones fallarán en el paso de "leer la receta".
@@ -154,9 +177,9 @@ Después de instalar, verifica que la carpeta `models/` se haya colocado junto a
 
 **No es multiproveedor.** Sin Kling, sin Seedance, sin Sora, sin enrutamiento de respaldo entre agregadores. Esta es una decisión deliberada: una única ruta de autenticación y acceso inmediato a las funciones de Gemini, a costa de la variedad de modelos. Si necesitas modelos que no sean de Google bajo una misma clave, considera usar envoltorios tipo Higgsfield en su lugar — diferente herramienta, diferente decisión.
 
-**No garantiza resultados reproducibles.** Ningún modelo aquí documenta un parámetro de seed en la Interactions API de Google. Cada repetición es una generación nueva y no determinista, no una copia — el sidecar existe para que reutilices el prompt y las referencias exactas en lugar de prometer resultados idénticos.
+**No garantiza resultados reproducibles.** Ningún modelo aquí documenta un parámetro de seed en la Interactions API de Google. Cada repetición es una generación nueva y no determinista, no una copia — el sidecar existe para que reutilices el prompt y las referencias exactas (o encadenes ediciones mediante `previous_interaction_id`) en lugar de prometer resultados idénticos.
 
-**Los IDs de modelo cambian según el calendario de Google, no el de esta skill.** `gemini-3-pro-image-preview` ya fue descontinuado en favor del GA `gemini-3-pro-image`; `gemini-omni-flash-preview` sigue siendo un nombre de vista previa y podría cambiar después. Si una llamada devuelve "model not found" (modelo no encontrado), consulta la [documentación de la API de Gemini](https://ai.google.dev/gemini-api/docs) para obtener el ID actual y actualiza el archivo de receta correspondiente. Ese es el único mantenimiento que requiere este sistema.
+**Los IDs de modelo cambian según el calendario de Google, no el de esta skill.** `gemini-3.1-flash-image` (Nano Banana 2) fue descontinuado en favor de `gemini-nano-banana-2.1`, `gemini-omni-flash-preview` y `veo-3.1-*-preview` fueron apagados en favor del GA `gemini-omni-1.1-flash`, y `gemini-3-pro-image-preview` fue apagado en favor de `gemini-3-pro-image`. Si una llamada devuelve "model not found" (modelo no encontrado), consulta la [documentación de la API de Gemini](https://ai.google.dev/gemini-api/docs) para obtener el ID actual y actualiza el archivo de receta correspondiente. Ese es el único mantenimiento que requiere este sistema.
 
 ## Seguridad
 
@@ -168,6 +191,12 @@ Marketplaces como [skills.sh](https://skills.sh) ejecutan auditorías automatiza
 - **Escrituras de archivos** — limitadas al workspace: `generations/` y `generations/refs/`. Nada fuera del proyecto actual, y nada relacionado con la configuración de la clave.
 
 La forma exacta de cada solicitud está en `models/*.md` por si prefieres verificarla tú mismo en lugar de confiar en esta lista.
+
+## Star History
+
+Si esto te ahorra una factura sorpresa o un prompt perdido, una estrella ayuda a que otras personas que trabajan con los modelos de medios de Gemini la encuentren también.
+
+[![Star History Chart](https://api.star-history.com/svg?repos=AntonioCardenas/generate-nanobanana&type=Date)](https://star-history.com/#AntonioCardenas/generate-nanobanana&Date)
 
 ## Licencia
 

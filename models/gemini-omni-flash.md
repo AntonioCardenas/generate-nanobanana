@@ -1,21 +1,23 @@
 # Gemini Omni Flash
 
-Google's cost-efficient video model — up to 10 seconds of 720p video with synchronized audio per clip, and it can take image or video (not just text) as input for conversational editing. This is the video default; there's no separate "quality" video tier wired into this skill yet — if a job needs 1080p/4K or longer clips, that's Veo territory and out of scope until a `veo.md` recipe is added.
+Google's GA multimodal video generation and conversational editing model (`gemini-omni-1.1-flash`). Generates 3–10 second clips at 24 FPS with synchronized audio across `360p`, `720p` (default), `1080p` (upscaled), and `4k` (upscaled), and supports image-to-video, first/last frame interpolation, scene extension, and multi-turn conversational editing.
 
 | Field | Value |
 |---|---|
-| Model ID | `gemini-omni-flash-preview` |
+| Model ID | `gemini-omni-1.1-flash` |
 | Provider | Gemini API (Google AI Studio key) |
 | API | Interactions API — `client.interactions.create` |
-| Method | Sync for small clips (inline base64); large outputs use submit-then-poll via the Files API (`delivery: "uri"`) |
+| Method | Sync for standard clips (inline base64); large outputs (>4MB / >720p) use `delivery: "uri"` via the Files API |
 | Type | Video |
 | API key | `GEMINI_API_KEY` env var |
 | Docs | https://ai.google.dev/gemini-api/docs/omni |
-| Cost | Quote per-second pricing from https://ai.google.dev/gemini-api/docs/pricing before running — this is the model the cost-approval gate exists for, alongside image generation (see SKILL.md, Rules) |
+| Cost | ~$0.10 / second at 720p ($17.50 / 1M video output tokens at ~5,792 tokens/s; $1.50 / 1M input tokens; $9.00 / 1M text output tokens) — quote current pricing from https://ai.google.dev/gemini-api/docs/pricing and get approval before running (see SKILL.md, Rules) |
+
+`gemini-omni-flash-preview` and the Gemini API `veo-3.1-*-preview` endpoints were shut down on 2026-10-22 (`veo-3.0-*` shut down 2026-06-30). `gemini-omni-1.1-flash` is the GA replacement for all of them.
 
 ## Request (Python, `google-genai` SDK)
 
-### Text-to-video
+### Text-to-video (with aspect ratio & resolution control)
 ```python
 import base64
 from google import genai
@@ -23,15 +25,20 @@ from google import genai
 client = genai.Client()
 
 interaction = client.interactions.create(
-    model="gemini-omni-flash-preview",
+    model="gemini-omni-1.1-flash",
     input=prompt,
+    response_format={
+        "type": "video",
+        "aspect_ratio": "16:9",  # "16:9" (default) | "9:16"
+        "resolution": "720p",    # "360p" | "720p" (default) | "1080p" (upscaled) | "4k" (upscaled)
+    },
 )
 with open(output_path, "wb") as f:
     f.write(base64.b64decode(interaction.output_video.data))
 ```
 
-### Image-to-video / reference-guided
-Pass reference images (start frame, subject, style) as `image` input parts alongside the text instruction — don't re-describe a still in words when the pixels exist:
+### Image-to-video & first/last frame interpolation
+Pass 1 image as a starting frame/reference, or 2 images to interpolate smoothly from first frame to last frame. You can also bind roles explicitly in the prompt with `<FIRST_FRAME>`, `<LAST_FRAME>`, `<IMAGE_REF_0>`, and `<VIDEO_REF_0>`:
 ```python
 import base64
 from google import genai
@@ -42,7 +49,7 @@ with open(image_path, "rb") as f:
     frame_bytes = f.read()
 
 interaction = client.interactions.create(
-    model="gemini-omni-flash-preview",
+    model="gemini-omni-1.1-flash",
     input=[
         {"type": "image", "data": base64.b64encode(frame_bytes).decode("utf-8"), "mime_type": "image/png"},
         {"type": "text", "text": prompt},
@@ -52,17 +59,30 @@ with open(output_path, "wb") as f:
     f.write(base64.b64decode(interaction.output_video.data))
 ```
 
-### Stateful editing
-Chain an edit onto a prior generation instead of re-describing the whole scene:
+### Stateful editing & multi-turn video extension
+Chain an edit or a 3–10 second continuation onto a prior generation without re-uploading the video:
 ```python
 edited = client.interactions.create(
-    model="gemini-omni-flash-preview",
+    model="gemini-omni-1.1-flash",
     previous_interaction_id=interaction.id,
-    input="Make the violin invisible.",
+    input="Make the violin invisible.",  # or "Continue the scene: the camera pans across the mountains."
 )
 ```
 
-### Large outputs — retrieve via URI instead of inline base64
+### Extending an uploaded video
+```python
+video_file = client.files.upload(file="my_video.mp4")  # must be <=10s
+
+extended = client.interactions.create(
+    model="gemini-omni-1.1-flash",
+    input=[
+        {"type": "video", "uri": video_file.uri},
+        {"type": "text", "text": "Continue the scene."},
+    ],
+)
+```
+
+### Large outputs (>4MB / 1080p / 4K) — retrieve via URI
 ```python
 import time
 from google import genai
@@ -70,9 +90,9 @@ from google import genai
 client = genai.Client()
 
 interaction = client.interactions.create(
-    model="gemini-omni-flash-preview",
+    model="gemini-omni-1.1-flash",
     input=prompt,
-    response_format={"type": "video", "delivery": "uri"},
+    response_format={"type": "video", "resolution": "1080p", "delivery": "uri"},
 )
 
 video_output = interaction.output_video
@@ -93,11 +113,11 @@ with open(output_path, "wb") as f:
 
 ## Response handling
 
-The inline path returns `output_video.data` as base64 — decode with `base64.b64decode` before writing; don't treat it as raw bytes. The URI path returns `output_video.uri`, which stays pending until the corresponding `files.get` state reaches `ACTIVE` (check `FAILED` too, so a broken job doesn't spin forever). Download and save immediately — generated-video URIs are not guaranteed to stay valid indefinitely. The response also carries an `id` — log it so a later edit can chain onto this one via `previous_interaction_id`.
+The inline path returns `output_video.data` as base64 — decode with `base64.b64decode` before writing; don't treat it as raw bytes. For videos larger than 4MB (such as `1080p` or `4k` outputs), use `delivery: "uri"`, poll `client.files.get` until `ACTIVE` (checking `FAILED` too), and download immediately — note that `output_video.uri` is only returned on the initial creation response, whereas a later `GET /v1beta/interactions/{id}` returns inline base64. Always verify the `.mp4` landed on disk and is non-empty before writing the sidecar, and log `interaction.id` in `response_id`.
 
 ## Notes
 
-- This is a preview model name and the API surface for it may still be settling — before relying on this recipe for a real (paid) run, do a quick check against the current docs, since Google iterates on this one faster than the GA image models.
-- Because this is billed per second, this is exactly the model the skill's "quote cost, wait for approval" rule exists for — alongside image generation, which is also billable. Never fire this off speculatively.
-- To keep a clip visually on-model with approved stills, pass the approved image as an `image` input part rather than re-describing the scene in text — the still anchors palette, character, and framing; a text-only prompt re-rolls the look.
-- No `seed` or reproducibility parameter is documented on the Interactions API for this model. `previous_interaction_id` (stateful editing, above) is the real coherence lever for video — not a seed — so log the response `id` in every sidecar.
+- **Explicit `task` hint (fallback only):** Rely on natural-language prompting first. If the model misinterprets the mode, pass `generation_config={"video_config": {"task": "image_to_video"}}` (allowed: `text_to_video`, `image_to_video`, `reference_to_video`, `edit`, `extend`).
+- **Single-shot vs multi-shot default:** By default, Omni Flash crafts a multi-shot narrative. If the user wants one continuous shot, include `"In a single unbroken scene, no scene cuts"` in the prompt.
+- **Unsupported parameters:** `temperature`, `top_p`, stop sequences, system instructions, and separate negative-prompt fields are unsupported — weave exclusions into the prompt itself (e.g., `"No dialogue, no extra sound effects"`).
+- **Cost & approval gate:** Billed per output token (~$0.10/sec at 720p; ~`$1.01` for a 10-second clip) with no free tier. Quote expected duration, resolution, and cost and wait for explicit approval before every call.
