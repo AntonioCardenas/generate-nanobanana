@@ -1,17 +1,17 @@
 ---
 name: generate
-description: Generate images, videos, storyboards, and code visuals using Google's Gemini media and reasoning models (Nano Banana 2 Lite, Nano Banana 2.1, Nano Banana Pro, Gemini Omni 1.2 Flash, Gemini 4 Argon, Gemini 4 Neon, Gemini 4 Hydrogen) via the Gemini API. Use this whenever the user asks to generate, create, or make an image or video, wants a thumbnail, wants to animate a still image, says "generate on brand" or "generate from reference", wants to link or import a folder of reference images, invokes /generate or /generate frf, or asks to update this skill ("/generate update") — even if they don't name a specific model, and even if they just describe a visual they want without saying "generate."
+description: Generate images, videos, storyboards, and code visuals using Google's Gemini media and reasoning models (Nano Banana 2 Lite, Nano Banana 2.1, Nano Banana Pro, Gemini Omni 1.2 Flash, Gemini 4 Carbon, Gemini 4 Argon, Gemini 4 Neon, Gemini 4 Hydrogen) via the Gemini API. Use this whenever the user asks to generate, create, or make an image or video, wants a thumbnail, wants to animate a still image, says "generate on brand" or "generate from reference", wants to link or import a folder of reference images, invokes /generate or /generate frf, or asks to update this skill ("/generate update") — even if they don't name a specific model, and even if they just describe a visual they want without saying "generate."
 ---
 
 # /generate
 
-Calls Google's Gemini media and frontier reasoning models directly through the Gemini API — no third-party routing layer. One key, one bill, and access to the newest Google-specific features (Nano Banana 2.1's panoramic ratios and search grounding, Nano Banana Pro's multi-image fusion, Omni 1.2 Flash's 3s–15s 1080p/4K video and up to 30s extensions, and the Gemini 4 Argon / Neon / Hydrogen 1M-token storyboard and code-visual reasoning suite) as soon as they ship.
+Calls Google's Gemini media and frontier reasoning models directly through the Gemini API — no third-party routing layer. One key, one bill, and access to the newest Google-specific features (Nano Banana 2.1's panoramic ratios and search grounding, Nano Banana Pro's multi-image fusion, Omni 1.2 Flash's 3s–15s 1080p/4K video and up to 30s extensions, and the Gemini 4 Carbon / Argon / Neon / Hydrogen 1M-token storyboard and code-visual reasoning suite) as soon as they ship.
 
 ## How a generation flows
 
 1. **Route** — pick the model for the job (draft image, standard image, quality image, video, or storyboard / code visual) and read its recipe file before calling anything. Recipes hold the exact request shape and any quirks that have shown up since the model shipped.
 2. **Load references** — pull any real reference images (logos, faces, style shots) from `generations/refs/`, or from a named reference set if the request invokes `/generate frf` or says "from reference" or "on brand" (see Reference library). Never substitute a text description for a reference image that exists.
-3. **Generate** — call the API per the recipe, through the **Interactions API** (`client.interactions.create`) — the current, documented entry point for every model below. Images reply synchronously; large videos (>4MB) and >64K-token Gemini 4 (Argon, Neon, Hydrogen) decodes use submit-then-poll. Save the result flat into the generations folder.
+3. **Generate** — call the API per the recipe, through the **Interactions API** (`client.interactions.create`) — the current, documented entry point for every model below. Images reply synchronously; large videos (>4MB) and >64K-token Gemini 4 (Carbon, Argon, Neon, Hydrogen) decodes use submit-then-poll. Save the result flat into the generations folder.
 4. **Log** — verify the generated file is actually on disk and non-empty, then write the sidecar JSON next to it (see Logging). Never log a generation whose file isn't there.
 
 ## Models
@@ -24,7 +24,8 @@ Calls Google's Gemini media and frontier reasoning models directly through the G
 | Video (3s–15s, extend up to 30s) | Gemini Omni 1.2 Flash | `gemini-omni-1.2-flash` | `models/gemini-omni-flash.md` |
 | Storyboard / Code visuals (fast daily driver) | Gemini 4 Hydrogen | `gemini-4-hydrogen` | `models/gemini-4-hydrogen.md` |
 | Storyboard / Code visuals (fast frontier execution) | Gemini 4 Neon | `gemini-4-neon` | `models/gemini-4-neon.md` |
-| Storyboard / Code visuals (deep reasoning & 3D/shaders) | Gemini 4 Argon | `gemini-4-argon` | `models/gemini-4-argon.md` |
+| Storyboard / Code visuals (efficient frontier reasoning) | Gemini 4 Argon | `gemini-4-argon` | `models/gemini-4-argon.md` |
+| Storyboard / Code visuals (maximum reasoning depth & 3D/shaders) | Gemini 4 Carbon | `gemini-4-carbon` | `models/gemini-4-carbon.md` |
 
 `gemini-3.1-flash-image` (Nano Banana 2) was deprecated 2026-10-06 (shut down 2026-10-29) in favor of the GA `gemini-nano-banana-2.1` (and `imagen-4.0-*` shut down 2026-08-17). `gemini-omni-1.1-flash`, `gemini-omni-flash-preview`, and `veo-3.1-*-preview` are superseded by the GA `gemini-omni-1.2-flash`. `gemini-3-pro-image-preview` shut down 2026-06-25 in favor of `gemini-3-pro-image`. Model IDs move on Google's schedule, not this skill's; always read the recipe file rather than trusting this table from memory.
 
@@ -39,8 +40,9 @@ Rough costs, Standard (sync) tier as of November 2026 — re-check https://ai.go
 | Storyboard / Code visuals (Gemini 4 Hydrogen) | $1.50/1M input, $7.50/1M output+thinking tokens (Free tier also available in AI Studio) |
 | Storyboard / Code visuals (Gemini 4 Neon) | $3.00/1M input, $15.00/1M output+thinking tokens (Paid tier only) |
 | Storyboard / Code visuals (Gemini 4 Argon) | $2.00/1M input, $10.00/1M output+thinking tokens through Nov 30, 2026 ($4.00 / $20.00 starting Dec 1, 2026; Paid tier only) |
+| Storyboard / Code visuals (Gemini 4 Carbon) | $2.00/1M input, $10.00/1M output+thinking tokens through Nov 30, 2026 ($4.00 / $20.00 starting Dec 1, 2026; Paid tier only) |
 
-Every row above is billable on the paid API — image generation is not free just because it's cheap, and Gemini 4 Argon, Gemini 4 Neon, and Omni 1.2 Flash have no free tier. Quote current pricing and get explicit approval before any paid call, not only video (see Rules).
+Every row above is billable on the paid API — image generation is not free just because it's cheap, and Gemini 4 Carbon, Gemini 4 Argon, Gemini 4 Neon, and Omni 1.2 Flash have no free tier. Quote current pricing and get explicit approval before any paid call, not only video (see Rules).
 
 
 ## Reference library
@@ -150,7 +152,7 @@ The recipes in `models/` call the `google-genai` Python SDK directly. In agents 
 
 **Quote cost and wait for explicit go-ahead before any paid generation — image or video.** Every call in this skill spends real money against the user's Google AI Studio billing, not just video. A quote alone isn't approval, and one approval covers exactly one run. If a rerun is needed, quote and confirm again.
 
-**Draft on Nano Banana 2 Lite first; rerun the picked favorite on Nano Banana 2.1 or Pro.** This mirrors how the models are positioned — Lite for sub-2s 1K iteration, Nano Banana 2.1 for 1K/2K/4K finals, panoramic ratios, and up to 4-character / 10-object fusion, and Pro when the job needs 5-character consistency, dedicated style-reference slots, or the heaviest layout reasoning. Use the Gemini 4 suite (**Gemini 4 Hydrogen** for fast prototyping and reference analysis, **Gemini 4 Neon** for fast end-to-end frontier execution, or **Gemini 4 Argon** for deep 3D/shader and storyboard reasoning) when a job needs multi-shot storyboarding, dense infographic copy planning before image generation, or code-driven vector/3D visuals (SVG, Three.js, Canvas, GLSL shaders).
+**Draft on Nano Banana 2 Lite first; rerun the picked favorite on Nano Banana 2.1 or Pro.** This mirrors how the models are positioned — Lite for sub-2s 1K iteration, Nano Banana 2.1 for 1K/2K/4K finals, panoramic ratios, and up to 4-character / 10-object fusion, and Pro when the job needs 5-character consistency, dedicated style-reference slots, or the heaviest layout reasoning. Use the Gemini 4 suite (**Gemini 4 Hydrogen** for fast prototyping and reference analysis, **Gemini 4 Neon** for fast end-to-end frontier execution, **Gemini 4 Argon** for efficient frontier 3D/storyboard reasoning, or **Gemini 4 Carbon** for maximum sustained reasoning depth on complex shaders/3D scenes) when a job needs multi-shot storyboarding, dense infographic copy planning before image generation, or code-driven vector/3D visuals (SVG, Three.js, Canvas, GLSL shaders).
 
 **Never describe a face or logo in a text prompt — pass the real image as a reference instead.** Descriptions of specific people or brand marks drift from the source almost every time. If the reference file is missing, stop and ask rather than approximating.
 

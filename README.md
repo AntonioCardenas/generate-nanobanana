@@ -8,7 +8,7 @@
 [![Install via skills CLI](https://img.shields.io/badge/install-npx%20skills%20add-brightgreen)](https://github.com/vercel-labs/skills)
 [![Featured in Agentic Awesome Skills](https://img.shields.io/badge/Featured%20in-Agentic%20Awesome%20Skills-8A2BE2)](https://github.com/sickn33/agentic-awesome-skills)
 
-> AI image, video &amp; visual reasoning skill using Google Gemini (Nano Banana 2 Lite, Nano Banana 2.1, Nano Banana Pro, Gemini Omni 1.2 Flash, Gemini 4 Argon, Gemini 4 Neon, Gemini 4 Hydrogen). Supported on **Antigravity**, **Antigravity CLI**, **Claude Code**, **Cursor**, and other agent environments. Cost gates before paid runs, real reference images, a prompt log beside every file.
+> AI image, video &amp; visual reasoning skill using Google Gemini (Nano Banana 2 Lite, Nano Banana 2.1, Nano Banana Pro, Gemini Omni 1.2 Flash, Gemini 4 Carbon, Gemini 4 Argon, Gemini 4 Neon, Gemini 4 Hydrogen). Supported on **Antigravity**, **Antigravity CLI**, **Claude Code**, **Cursor**, and other agent environments. Cost gates before paid runs, real reference images, a prompt log beside every file.
 > 
 
 One command that generates images, videos, storyboards, and code visuals through Google's Gemini media and reasoning models, never surprises you with a bill, and files every output — with the exact prompt that made it — in one folder.
@@ -48,7 +48,8 @@ One command that generates images, videos, storyboards, and code visuals through
 | Video (3s–15s, extend up to 30s) | Gemini Omni 1.2 Flash | `gemini-omni-1.2-flash` | ~$0.10 / second (720p) — always quoted first |
 | Storyboard / Code visuals (fast daily driver) | Gemini 4 Hydrogen | `gemini-4-hydrogen` | $1.50/1M input, $7.50/1M output+thinking (Free tier also in AI Studio) |
 | Storyboard / Code visuals (fast frontier execution) | Gemini 4 Neon | `gemini-4-neon` | $3.00/1M input, $15.00/1M output+thinking |
-| Storyboard / Code visuals (deep reasoning & 3D/shaders) | Gemini 4 Argon | `gemini-4-argon` | $2/1M input, $10/1M output+thinking through Nov 30, 2026 ($4 / $20 starting Dec 1, 2026) |
+| Storyboard / Code visuals (efficient frontier reasoning) | Gemini 4 Argon | `gemini-4-argon` | $2/1M input, $10/1M output+thinking through Nov 30, 2026 ($4 / $20 starting Dec 1, 2026) |
+| Storyboard / Code visuals (maximum reasoning depth & 3D/shaders) | Gemini 4 Carbon | `gemini-4-carbon` | $2/1M input, $10/1M output+thinking through Nov 30, 2026 ($4 / $20 starting Dec 1, 2026) |
 
 Figures above are Google's published Standard (synchronous) tier pricing as of November 2026 — see https://ai.google.dev/gemini-api/docs/pricing. Every call above goes through Google's Interactions API (`client.interactions.create`) and every one of them is billable — quote current pricing and get approval before any of them, not only video. Each model has its own recipe file in `models/` holding the exact request shape, response handling, and gotchas. When Google ships a better model, you add one markdown file and the skill learns it. Nothing else changes.
 
@@ -169,7 +170,8 @@ models/
   gemini-omni-flash.md            video recipe — Gemini Omni 1.2 Flash (3s-15s, 360p-4K, interpolation, extension up to 30s)
   gemini-4-hydrogen.md            fast reasoning & UI/SVG prototyping recipe — daily driver (1M context, xhigh thinking)
   gemini-4-neon.md                fast frontier reasoning & code visuals recipe — storyboards, SVG/Three.js (1M context, xhigh thinking)
-  gemini-4-argon.md               deep reasoning & code visuals recipe — storyboards, copy planning, SVG/Three.js/Shaders (1M context)
+  gemini-4-argon.md               efficient frontier reasoning & code visuals recipe — storyboards, copy planning, SVG/Three.js (1M context)
+  gemini-4-carbon.md              maximum-depth reasoning & 3D/shader recipe — complex Three.js, GLSL shaders, verification (1M context)
 ```
 
 After installing, check that `models/` landed alongside `SKILL.md` in your skills directory. The routing table points at those recipe files, so if only `SKILL.md` came across, generations will fail at the "read the recipe" step.
