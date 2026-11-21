@@ -8,21 +8,21 @@
 [![Install via skills CLI](https://img.shields.io/badge/install-npx%20skills%20add-brightgreen)](https://github.com/vercel-labs/skills)
 [![Featured in Agentic Awesome Skills](https://img.shields.io/badge/Featured%20in-Agentic%20Awesome%20Skills-8A2BE2)](https://github.com/sickn33/agentic-awesome-skills)
 
-> AI image, video &amp; visual reasoning skill using Google Gemini (Nano Banana 2 Lite, Nano Banana 2.1, Nano Banana Pro, Gemini Omni Flash, Gemini 4 Argon). Supported on **Antigravity**, **Antigravity CLI**, **Claude Code**, **Cursor**, and other agent environments. Cost gates before paid runs, real reference images, a prompt log beside every file.
+> AI image, video &amp; visual reasoning skill using Google Gemini (Nano Banana 2 Lite, Nano Banana 2.1, Nano Banana Pro, Gemini Omni 1.2 Flash, Gemini 4 Argon, Gemini 4 Neon, Gemini 4 Hydrogen). Supported on **Antigravity**, **Antigravity CLI**, **Claude Code**, **Cursor**, and other agent environments. Cost gates before paid runs, real reference images, a prompt log beside every file.
 > 
 
 One command that generates images, videos, storyboards, and code visuals through Google's Gemini media and reasoning models, never surprises you with a bill, and files every output — with the exact prompt that made it — in one folder.
 
 [![Nano Banana Y2K Poster Example](nanobanana_y2k_poster.png)](nanobanana_y2k_poster.png)
-*Example output generated with Nano Banana Pro: Y2K poster aesthetic.*
+*Example output generated with Nano Banana Pro &amp; Gemini 4 Neon: Y2K cyber-couture campaign aesthetic (`GEMINI 4 // NEON · ARGON · HYDROGEN`).*
 
 **Why people reach for this instead of calling the API directly:**
 
 - **Approval gate on every paid call** — image, video, or reasoning, the skill quotes the model and expected cost first and waits for your go-ahead. No surprise bills.
 - **Real references, never descriptions** — your actual logo, face, or style shots get loaded in, not approximated from text.
 - **A prompt log beside every file** — same basename, `.json` sidecar, so "what prompt made this?" always has an answer, months later.
-- **Draft cheap, finish pretty** — routes between Lite, Nano Banana 2.1, Pro, and Gemini 4 Argon automatically depending on whether you're iterating, finishing, or storyboarding.
-- **Google-only, day-one features** — one API key, one bill, and Nano Banana 2.1's panoramic ratios, Nano Banana Pro's multi-image fusion, Omni Flash's 1080p/4K upscaling &amp; synced audio, or Gemini 4 Argon's 1M-token storyboard reasoning the day they ship, no aggregator in the middle.
+- **Draft cheap, finish pretty** — routes between Lite, Nano Banana 2.1, Pro, and the Gemini 4 suite (Argon, Neon, Hydrogen) automatically depending on whether you're iterating, finishing, or storyboarding.
+- **Google-only, day-one features** — one API key, one bill, and Nano Banana 2.1's panoramic ratios, Nano Banana Pro's multi-image fusion, Omni 1.2 Flash's 3s–15s 1080p/4K video &amp; synced audio, or Gemini 4 Argon / Neon / Hydrogen's 1M-token storyboard and code-visual reasoning the day they ship, no aggregator in the middle.
 - **Works where you already work** — Antigravity, Antigravity CLI, Claude Code, Cursor, and any agent that reads skill files.
 
 ## Table of Contents
@@ -45,8 +45,10 @@ One command that generates images, videos, storyboards, and code visuals through
 | Image (draft) | Nano Banana 2 Lite | `gemini-3.1-flash-lite-image` | ~$0.034 / image (1K only) |
 | Image (standard) | Nano Banana 2.1 | `gemini-nano-banana-2.1` | $0.034–0.113 / image (1K–4K) |
 | Image (quality) | Nano Banana Pro | `gemini-3-pro-image` | $0.134–0.24 / image (1K/2K–4K) |
-| Video | Gemini Omni Flash | `gemini-omni-1.1-flash` | ~$0.10 / second (720p) — always quoted first |
-| Storyboard / Code visuals | Gemini 4 Argon | `gemini-4-argon` | $2/1M input, $10/1M output+thinking through Nov 30, 2026 ($4 / $20 starting Dec 1, 2026) |
+| Video (3s–15s, extend up to 30s) | Gemini Omni 1.2 Flash | `gemini-omni-1.2-flash` | ~$0.10 / second (720p) — always quoted first |
+| Storyboard / Code visuals (fast daily driver) | Gemini 4 Hydrogen | `gemini-4-hydrogen` | $1.50/1M input, $7.50/1M output+thinking (Free tier also in AI Studio) |
+| Storyboard / Code visuals (fast frontier execution) | Gemini 4 Neon | `gemini-4-neon` | $3.00/1M input, $15.00/1M output+thinking |
+| Storyboard / Code visuals (deep reasoning & 3D/shaders) | Gemini 4 Argon | `gemini-4-argon` | $2/1M input, $10/1M output+thinking through Nov 30, 2026 ($4 / $20 starting Dec 1, 2026) |
 
 Figures above are Google's published Standard (synchronous) tier pricing as of November 2026 — see https://ai.google.dev/gemini-api/docs/pricing. Every call above goes through Google's Interactions API (`client.interactions.create`) and every one of them is billable — quote current pricing and get approval before any of them, not only video. Each model has its own recipe file in `models/` holding the exact request shape, response handling, and gotchas. When Google ships a better model, you add one markdown file and the skill learns it. Nothing else changes.
 
@@ -136,7 +138,7 @@ First run with no folder yet? The skill creates `generations/refs/brand/`, tells
 Almost everything in this skill is a constraint, and the constraints are what make it usable daily rather than what limits it:
 
 - **Quote before every paid call — image, video, or reasoning.** Video is the expensive lane, but images and frontier reasoning aren't free either. The skill states model and expected dollars (plus duration, for video), then waits for an explicit go. One approval covers exactly one run.
-- **Draft cheap, finish pretty.** Iterate on Nano Banana 2 Lite; rerun your favourite on Nano Banana 2.1 (with 2K/4K, panoramic ratios, and up to 4-character / 10-object fusion), or on Pro when the job needs 5-character consistency, dedicated style references, or dense layout reasoning. Use Gemini 4 Argon when you need multi-shot storyboards, pre-planned infographic copy, or SVG / Three.js code visuals. You stop paying premium prices for throwaway drafts.
+- **Draft cheap, finish pretty.** Iterate on Nano Banana 2 Lite; rerun your favourite on Nano Banana 2.1 (with 2K/4K, panoramic ratios, and up to 4-character / 10-object fusion), or on Pro when the job needs 5-character consistency, dedicated style references, or dense layout reasoning. Use the Gemini 4 suite (**Gemini 4 Hydrogen** for fast prototyping, **Gemini 4 Neon** for fast frontier execution, or **Gemini 4 Argon** for deep 3D/shader and storyboard reasoning) when you need multi-shot storyboards, pre-planned infographic copy, or SVG / Three.js / GLSL shader code visuals. You stop paying premium prices for throwaway drafts.
 - **Real refs, never described.** If a needed reference image is missing, the skill stops and asks for it instead of approximating your brand from a text description.
 - **Logged, so a rerun starts from the truth, not memory.** No model here documents a seed parameter — nothing promises pixel-identical repeats — so the sidecar logs the exact prompt, references, and response ID instead. "Same image but change the headline" reuses that logged prompt and those references and changes only that one thing, instead of re-rolling the whole composition from a half-remembered description. For series that must match (a character, a product line), the approved first image goes back in as a reference for every image after it.
 - **One flat folder, in your workspace.** Every output lands in a `generations/` folder at the root of the project you're working in, no subfolders — your images live next to the code that uses them, not off in your home directory. Any gallery, script, or plain folder search can read the project's whole media library with zero setup. (Running outside any project? It falls back to `~/generations` so files still have one predictable home.)
@@ -164,8 +166,10 @@ models/
   nano-banana-2-lite.md           draft image recipe — sync, 1K, sub-2s latency, the default
   nano-banana-2.md                standard image recipe — Nano Banana 2.1 (1K-4K, panoramic, up to 14 refs)
   nano-banana-pro.md              quality image recipe — up to 14 reference images (5 chars, 6 objects, 3 style)
-  gemini-omni-flash.md            video recipe — Gemini Omni 1.1 Flash (360p-4K, interpolation, extension, audio)
-  gemini-4-argon.md               reasoning & code visuals recipe — storyboards, copy planning, SVG/Three.js (1M context)
+  gemini-omni-flash.md            video recipe — Gemini Omni 1.2 Flash (3s-15s, 360p-4K, interpolation, extension up to 30s)
+  gemini-4-hydrogen.md            fast reasoning & UI/SVG prototyping recipe — daily driver (1M context, xhigh thinking)
+  gemini-4-neon.md                fast frontier reasoning & code visuals recipe — storyboards, SVG/Three.js (1M context, xhigh thinking)
+  gemini-4-argon.md               deep reasoning & code visuals recipe — storyboards, copy planning, SVG/Three.js/Shaders (1M context)
 ```
 
 After installing, check that `models/` landed alongside `SKILL.md` in your skills directory. The routing table points at those recipe files, so if only `SKILL.md` came across, generations will fail at the "read the recipe" step.
