@@ -97,42 +97,97 @@ extended = client.interactions.create(
 )
 ```
 
-### Large outputs (>4MB / 1080p / 4K) — retrieve via verified Files URI with deadline
+### Large outputs (>4MB / 1080p / 4K) — end-to-end deadline across create, poll, download, and atomic write
+Every SDK call (`interactions.create`, each `files.get` poll, and the final `files.download`) plus inter-poll sleeps and atomic staging commit must share **one monotonic `deadline`**, shrinking `types.HttpOptions(timeout=timeout_ms)` to the remaining budget on every call and cleaning up `.part` staging files on timeout or error:
 ```python
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+import math
+import os
 import re
 import time
+import uuid
+from pathlib import Path
 from urllib.parse import urlparse
 from google import genai
+from google.genai import types
 
-client = genai.Client()
+def call_bounded(fn, deadline: float):
+    remaining_s = deadline - time.monotonic()
+    if remaining_s <= 0:
+        raise TimeoutError("End-to-end deadline exceeded before SDK call.")
+    timeout_ms = max(1, math.ceil(remaining_s * 1000))
+    scoped = genai.Client(http_options=types.HttpOptions(timeout=timeout_ms))
+    close_fn = getattr(scoped, "close", None)
+    pool = ThreadPoolExecutor(max_workers=1)
+    fut = pool.submit(fn, scoped)
+    try:
+        res = fut.result(timeout=timeout_ms / 1000.0)
+    except FuturesTimeoutError as exc:
+        fut.cancel()
+        if callable(close_fn):
+            close_fn()
+        raise TimeoutError(f"SDK call exceeded remaining {remaining_s:.2f}s deadline.") from exc
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
+    if callable(close_fn):
+        close_fn()
+    if time.monotonic() > deadline:
+        raise TimeoutError("SDK call finished after end-to-end deadline expired.")
+    return res
 
-interaction = client.interactions.create(
-    model="gemini-omni-1.2-flash",
-    input=prompt,
-    response_format={"type": "video", "resolution": "1080p", "duration": "10s", "delivery": "uri"},
+total_budget_s = 600.0  # 10-minute end-to-end budget (use 900.0 for 15s 4K clips)
+poll_interval_s = 5.0
+deadline = time.monotonic() + total_budget_s
+
+out_path = Path(output_path)
+if out_path.is_symlink() or out_path.exists():
+    raise RuntimeError(f"Refusing symlink or existing destination: {out_path}")
+
+interaction = call_bounded(
+    lambda c: c.interactions.create(
+        model="gemini-omni-1.2-flash",
+        input=prompt,
+        response_format={"type": "video", "resolution": "1080p", "duration": "10s", "delivery": "uri"},
+    ),
+    deadline,
 )
 
 video_output = interaction.output_video
-parsed = urlparse(video_output.uri or "")
+parsed = urlparse((video_output.uri if video_output else "") or "")
 match = re.fullmatch(r"/(?:v1(?:beta)?/)?(files/[a-z0-9-]+)", parsed.path)
-if parsed.scheme != "https" or parsed.hostname != "generativelanguage.googleapis.com" or not match:
-    raise RuntimeError(f"Untrusted or malformed video output URI: {video_output.uri}")
+if parsed.scheme != "https" or parsed.hostname != "generativelanguage.googleapis.com" or parsed.query or parsed.fragment or not match:
+    raise RuntimeError(f"Untrusted or malformed video output URI: {getattr(video_output, 'uri', None)}")
 resource_name = match.group(1)
 
-deadline = time.monotonic() + 600  # 10-minute bounded polling deadline
-while time.monotonic() < deadline:
-    f_info = client.files.get(name=resource_name)
-    if f_info.state.name == "ACTIVE":
+while True:
+    f_info = call_bounded(lambda c: c.files.get(name=resource_name), deadline)
+    state = getattr(f_info.state, "name", f_info.state)
+    if state == "ACTIVE":
         break
-    if f_info.state.name == "FAILED":
-        raise RuntimeError("Video generation failed on Files API.")
-    time.sleep(5)
-else:
-    raise TimeoutError(f"Timed out waiting for {resource_name}; check status before rerunning.")
+    if state == "FAILED":
+        raise RuntimeError(f"Video generation failed on Files API ({resource_name}, interaction={interaction.id}).")
+    remaining_s = deadline - time.monotonic()
+    if remaining_s <= 0:
+        raise TimeoutError(f"Timed out polling {resource_name} (interaction={interaction.id}); check remote status before rerunning.")
+    time.sleep(min(poll_interval_s, remaining_s))
 
-video_bytes = client.files.download(file=resource_name)
-with open(output_path, "wb") as f:
-    f.write(video_bytes)
+# Final download is bounded by the SAME remaining deadline budget
+video_bytes = call_bounded(lambda c: c.files.download(file=resource_name), deadline)
+if not video_bytes:
+    raise RuntimeError(f"Downloaded empty video payload for {resource_name}")
+
+out_path.parent.mkdir(parents=True, exist_ok=True)
+tmp_path = out_path.parent / f".{out_path.name}.{uuid.uuid4().hex}.part"
+committed = False
+try:
+    tmp_path.write_bytes(video_bytes)
+    if time.monotonic() > deadline:
+        raise TimeoutError(f"Deadline expired before committing {out_path} (interaction={interaction.id}).")
+    os.replace(tmp_path, out_path)
+    committed = True
+finally:
+    if not committed and tmp_path.exists():
+        tmp_path.unlink(missing_ok=True)
 ```
 
 ## Response handling

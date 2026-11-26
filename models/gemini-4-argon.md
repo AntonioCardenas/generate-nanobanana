@@ -56,34 +56,65 @@ interaction = client.interactions.create(
 ```
 
 ### Long decode (>64K tokens, up to 1M tokens via `background=True`)
-When generating large multi-scene storyboards, complex interactive 3D scenes, or exhaustive asset packs that exceed 65,536 tokens, run in background mode so the server handles continuation hops automatically:
+When generating large multi-scene storyboards, complex interactive 3D scenes, or exhaustive asset packs that exceed 65,536 tokens, run in background mode under a single end-to-end monotonic `deadline` that bounds `interactions.create`, sleeps, every `interactions.get` call (`types.HttpOptions(timeout=remaining_ms)`), and atomic output commit:
 ```python
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+import math
+import os
 import time
+import uuid
+from pathlib import Path
 from google import genai
+from google.genai import types
 
-client = genai.Client()
+def call_bounded(fn, deadline: float):
+    remaining_s = deadline - time.monotonic()
+    if remaining_s <= 0:
+        raise TimeoutError("End-to-end deadline exceeded before SDK call.")
+    timeout_ms = max(1, math.ceil(remaining_s * 1000))
+    scoped = genai.Client(http_options=types.HttpOptions(timeout=timeout_ms))
+    close_fn = getattr(scoped, "close", None)
+    pool = ThreadPoolExecutor(max_workers=1)
+    fut = pool.submit(fn, scoped)
+    try:
+        res = fut.result(timeout=timeout_ms / 1000.0)
+    except FuturesTimeoutError as exc:
+        fut.cancel()
+        if callable(close_fn):
+            close_fn()
+        raise TimeoutError(f"SDK call exceeded remaining {remaining_s:.2f}s deadline.") from exc
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
+    if callable(close_fn):
+        close_fn()
+    if time.monotonic() > deadline:
+        raise TimeoutError("SDK call finished after end-to-end deadline expired.")
+    return res
 
-interaction = client.interactions.create(
-    model="gemini-4-argon",
-    input=prompt,
-    background=True,
-    generation_config={
-        "max_output_tokens": 131072,  # up to 1,048,576 minus input tokens
-        "thinking_level": "high",
-    },
+deadline = time.monotonic() + 900.0  # 15-minute end-to-end budget across create + polling + commit
+interaction = call_bounded(
+    lambda c: c.interactions.create(
+        model="gemini-4-argon",
+        input=prompt,
+        background=True,
+        generation_config={"max_output_tokens": 131072, "thinking_level": "high"},
+    ),
+    deadline,
 )
 
-deadline = time.monotonic() + 900  # 15-minute bounded deadline for long decode
 while interaction.status in ("in_progress", "queued"):
-    if time.monotonic() >= deadline:
-        raise TimeoutError(f"Long decode timed out (interaction={interaction.id})")
-    time.sleep(5)
-    interaction = client.interactions.get(id=interaction.id)
+    remaining_s = deadline - time.monotonic()
+    if remaining_s <= 0:
+        raise TimeoutError(f"Long decode timed out (interaction={interaction.id}); check status before rerunning.")
+    time.sleep(min(5.0, remaining_s))
+    interaction = call_bounded(lambda c: c.interactions.get(id=interaction.id), deadline)
 
-# Join text across all continuation hops
+if interaction.status != "completed":
+    raise RuntimeError(f"Long decode ended with status={interaction.status!r} (interaction={interaction.id})")
+
 full_text = "".join(
     content.text
-    for step in interaction.steps
+    for step in (interaction.steps or [])
     if step.type == "model_output"
     for content in (step.content or [])
     if content.type == "text"

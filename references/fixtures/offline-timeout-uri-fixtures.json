@@ -1,6 +1,6 @@
 {
-  "schema_version": 1,
-  "description": "Offline URI allowlist, magic-byte MIME detection, and bounded polling timeout fixtures",
+  "schema_version": 2,
+  "description": "Offline URI allowlist, magic-byte MIME detection, and end-to-end bounded SDK polling/download/cleanup regression fixtures",
   "uri_cases": [
     {
       "id": "valid_v1_files_uri",
@@ -55,27 +55,96 @@
       "expected_mime": "image/webp"
     }
   ],
-  "polling_timeout_cases": [
+  "bounded_retrieval_regression_cases": [
     {
-      "id": "active_before_deadline_succeeds",
-      "deadline_seconds": 600,
-      "step_seconds": 5,
-      "simulated_states": ["PROCESSING", "PROCESSING", "ACTIVE"],
-      "expected_outcome": "ACTIVE"
+      "id": "uri_video_within_budget_commits_atomically",
+      "total_budget_s": 25.0,
+      "poll_interval_s": 5.0,
+      "create_latency_s": 2.0,
+      "uri": "https://generativelanguage.googleapis.com/v1/files/omni-clip-001",
+      "poll_steps": [
+        { "state": "PROCESSING", "latency_s": 1.0 },
+        { "state": "PROCESSING", "latency_s": 1.0 },
+        { "state": "ACTIVE", "latency_s": 1.0 }
+      ],
+      "download_latency_s": 3.0,
+      "download_hex": "00000018667479706d703432",
+      "expected_outcome": "SUCCESS",
+      "expected_download_timeout_ms_max": 10000
     },
     {
-      "id": "failed_state_aborts_immediately",
-      "deadline_seconds": 600,
-      "step_seconds": 5,
-      "simulated_states": ["PROCESSING", "FAILED"],
-      "expected_outcome": "RuntimeError"
+      "id": "slow_create_call_exceeds_total_budget",
+      "total_budget_s": 4.0,
+      "poll_interval_s": 2.0,
+      "create_latency_s": 4.5,
+      "uri": "https://generativelanguage.googleapis.com/v1/files/omni-clip-002",
+      "poll_steps": [
+        { "state": "ACTIVE", "latency_s": 0.5 }
+      ],
+      "download_latency_s": 0.5,
+      "download_hex": "00000018667479706d703432",
+      "expected_outcome": "TimeoutError",
+      "expect_download_called": false
     },
     {
-      "id": "stuck_processing_hits_bounded_deadline",
-      "deadline_seconds": 15,
-      "step_seconds": 5,
-      "simulated_states": ["PROCESSING", "PROCESSING", "PROCESSING", "PROCESSING", "PROCESSING"],
-      "expected_outcome": "TimeoutError"
+      "id": "slow_poll_sdk_call_exceeds_remaining_deadline",
+      "total_budget_s": 10.0,
+      "poll_interval_s": 5.0,
+      "create_latency_s": 2.0,
+      "uri": "https://generativelanguage.googleapis.com/v1/files/omni-clip-003",
+      "poll_steps": [
+        { "state": "PROCESSING", "latency_s": 1.0 },
+        { "state": "ACTIVE", "latency_s": 3.0 }
+      ],
+      "download_latency_s": 0.5,
+      "download_hex": "00000018667479706d703432",
+      "expected_outcome": "TimeoutError",
+      "expect_download_called": false
+    },
+    {
+      "id": "slow_final_download_exceeds_remaining_deadline_and_cleans_staging",
+      "total_budget_s": 12.0,
+      "poll_interval_s": 5.0,
+      "create_latency_s": 2.0,
+      "uri": "https://generativelanguage.googleapis.com/v1/files/omni-clip-004",
+      "poll_steps": [
+        { "state": "PROCESSING", "latency_s": 1.5 },
+        { "state": "ACTIVE", "latency_s": 1.5 }
+      ],
+      "download_latency_s": 2.5,
+      "download_hex": "00000018667479706d703432",
+      "expected_outcome": "TimeoutError",
+      "expect_download_called": true,
+      "expected_download_timeout_ms_max": 2000
+    },
+    {
+      "id": "failed_remote_file_state_aborts_immediately_without_download",
+      "total_budget_s": 60.0,
+      "poll_interval_s": 5.0,
+      "create_latency_s": 1.0,
+      "uri": "https://generativelanguage.googleapis.com/v1/files/omni-clip-005",
+      "poll_steps": [
+        { "state": "PROCESSING", "latency_s": 0.5 },
+        { "state": "FAILED", "latency_s": 0.5 }
+      ],
+      "download_latency_s": 0.5,
+      "download_hex": "00000018667479706d703432",
+      "expected_outcome": "RuntimeError",
+      "expect_download_called": false
+    },
+    {
+      "id": "empty_download_payload_rejected_and_cleaned",
+      "total_budget_s": 30.0,
+      "poll_interval_s": 5.0,
+      "create_latency_s": 1.0,
+      "uri": "https://generativelanguage.googleapis.com/v1/files/omni-clip-006",
+      "poll_steps": [
+        { "state": "ACTIVE", "latency_s": 0.5 }
+      ],
+      "download_latency_s": 0.5,
+      "download_hex": "",
+      "expected_outcome": "RuntimeError",
+      "expect_download_called": true
     }
   ]
 }

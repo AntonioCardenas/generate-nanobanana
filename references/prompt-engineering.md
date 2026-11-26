@@ -108,15 +108,21 @@ Automatically rewrite these five failure modes before quoting or calling any mod
 
 ---
 
-## 6. No-Cost Offline Request-Shape, MIME & Timeout Validator
+## 6. No-Cost Offline Request-Shape, MIME & End-to-End Bounded Retrieval Helpers
 
-Run this **$0.00 offline validator** before every paid approval gate (and use `parse_verified_file_name` + bounded `monotonic()` deadlines for large video/long-decode polling). Test fixtures live in [`references/fixtures/offline-request-fixtures.json`](fixtures/offline-request-fixtures.json) and [`references/fixtures/offline-timeout-uri-fixtures.json`](fixtures/offline-timeout-uri-fixtures.json).
+Run this **$0.00 offline validator** before every paid approval gate, and use **`retrieve_uri_media_bounded`** / **`poll_background_interaction_bounded`** so a single monotonic `deadline` enforces remaining-budget timeouts (`types.HttpOptions(timeout=remaining_ms)` + wall-clock timeout preemption) across `interactions.create`, every `files.get` / `interactions.get` poll, inter-poll sleeps, the final `files.download`, and atomic `.part` staging commits with `finally` cleanup. Test fixtures live in [`references/fixtures/offline-request-fixtures.json`](fixtures/offline-request-fixtures.json) and [`references/fixtures/offline-timeout-uri-fixtures.json`](fixtures/offline-timeout-uri-fixtures.json).
 
 ```python
 from __future__ import annotations
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+import math
 import mimetypes
+import os
 import re
+import time
+import uuid
 from pathlib import Path
+from typing import Any, Callable
 from urllib.parse import urlparse
 
 SUPPORTED_IMAGE_MIMES = {"image/png", "image/jpeg", "image/webp", "image/heic", "image/heif"}
@@ -232,4 +238,192 @@ def parse_verified_file_name(uri: str) -> str:
     if not match:
         raise ValueError(f"Invalid Files API resource path in URI: {uri}")
     return match.group(1)
+
+def remaining_timeout_ms(deadline: float, *, clock: Callable[[], float] = time.monotonic) -> int:
+    """Return positive millisecond budget left until deadline, or raise TimeoutError immediately."""
+    remaining_s = deadline - clock()
+    if remaining_s <= 0:
+        raise TimeoutError("End-to-end deadline exceeded before SDK call.")
+    return max(1, math.ceil(remaining_s * 1000))
+
+def call_with_remaining_budget(
+    fn: Callable[[Any], Any],
+    *,
+    deadline: float,
+    client_factory: Callable[[int], Any],
+    clock: Callable[[], float] = time.monotonic,
+    enforce_wall_timeout: bool | None = None,
+) -> Any:
+    """Execute one SDK call with HttpOptions(timeout=remaining_ms) AND hard wall-clock preemption."""
+    timeout_ms = remaining_timeout_ms(deadline, clock=clock)
+    remaining_s = timeout_ms / 1000.0
+    if enforce_wall_timeout is None:
+        enforce_wall_timeout = clock is time.monotonic
+
+    scoped_client = client_factory(timeout_ms)
+    close_fn = getattr(scoped_client, "close", None)
+    if enforce_wall_timeout:
+        pool = ThreadPoolExecutor(max_workers=1)
+        future = pool.submit(fn, scoped_client)
+        try:
+            result = future.result(timeout=remaining_s)
+        except FuturesTimeoutError as exc:
+            future.cancel()
+            if callable(close_fn):
+                close_fn()
+            raise TimeoutError(f"SDK call exceeded remaining {remaining_s:.3f}s budget.") from exc
+        finally:
+            pool.shutdown(wait=False, cancel_futures=True)
+        if callable(close_fn):
+            close_fn()
+    else:
+        try:
+            result = fn(scoped_client)
+        finally:
+            if callable(close_fn):
+                close_fn()
+
+    if clock() > deadline:
+        raise TimeoutError("SDK call finished after end-to-end deadline expired.")
+    return result
+
+def atomic_write_verified_bytes(
+    output_path: str | Path,
+    payload: bytes,
+    *,
+    deadline: float,
+    clock: Callable[[], float] = time.monotonic,
+    overwrite: bool = False,
+) -> Path:
+    """Atomically stage and commit non-empty output bytes within deadline; unlink .part file on any error."""
+    out = Path(output_path)
+    if out.is_symlink():
+        raise RuntimeError(f"Refusing symlink destination: {out}")
+    if out.exists() and not overwrite:
+        raise FileExistsError(f"Refusing to overwrite existing artifact: {out}")
+    if not payload:
+        raise RuntimeError(f"Refusing to save empty output payload: {out}")
+
+    out.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = out.parent / f".{out.name}.{uuid.uuid4().hex}.part"
+    committed = False
+    try:
+        tmp_path.write_bytes(payload)
+        if clock() > deadline:
+            raise TimeoutError(f"Deadline expired before committing {out}; cleaned up staging file.")
+        if out.exists() and not overwrite:
+            raise FileExistsError(f"Destination appeared concurrently: {out}")
+        os.replace(tmp_path, out)
+        committed = True
+        return out
+    finally:
+        if not committed and tmp_path.exists():
+            tmp_path.unlink(missing_ok=True)
+
+def retrieve_uri_media_bounded(
+    *,
+    create_kwargs: dict[str, Any],
+    output_path: str | Path,
+    total_budget_s: float = 600.0,
+    poll_interval_s: float = 5.0,
+    client_factory: Callable[[int], Any],
+    clock: Callable[[], float] = time.monotonic,
+    sleep_fn: Callable[[float], None] = time.sleep,
+    overwrite: bool = False,
+) -> tuple[str, Path]:
+    """End-to-end bounded create -> URI verify -> poll -> download -> atomic commit for delivery='uri' media."""
+    if total_budget_s <= 0:
+        raise ValueError("total_budget_s must be > 0")
+    out = Path(output_path)
+    if out.is_symlink():
+        raise RuntimeError(f"Refusing symlink destination: {out}")
+    if out.exists() and not overwrite:
+        raise FileExistsError(f"Refusing to overwrite existing artifact: {out}")
+
+    deadline = clock() + total_budget_s
+    interaction = call_with_remaining_budget(
+        lambda c: c.interactions.create(**create_kwargs),
+        deadline=deadline,
+        client_factory=client_factory,
+        clock=clock,
+    )
+    interaction_id = getattr(interaction, "id", None) or "unknown"
+    video_out = getattr(interaction, "output_video", None)
+    if video_out is None or not getattr(video_out, "uri", None):
+        raise RuntimeError(f"Missing output_video.uri (interaction={interaction_id}).")
+
+    resource_name = parse_verified_file_name(video_out.uri)
+    while True:
+        f_info = call_with_remaining_budget(
+            lambda c: c.files.get(name=resource_name),
+            deadline=deadline,
+            client_factory=client_factory,
+            clock=clock,
+        )
+        state = getattr(getattr(f_info, "state", None), "name", getattr(f_info, "state", None))
+        if state == "ACTIVE":
+            break
+        if state == "FAILED":
+            raise RuntimeError(f"Files API processing failed for {resource_name} (interaction={interaction_id}).")
+        remaining_s = deadline - clock()
+        if remaining_s <= 0:
+            raise TimeoutError(
+                f"Timed out polling {resource_name} (interaction={interaction_id}); reconcile remote status before rerunning."
+            )
+        sleep_fn(min(poll_interval_s, remaining_s))
+
+    media_bytes = call_with_remaining_budget(
+        lambda c: c.files.download(file=resource_name),
+        deadline=deadline,
+        client_factory=client_factory,
+        clock=clock,
+    )
+    saved = atomic_write_verified_bytes(out, media_bytes, deadline=deadline, clock=clock, overwrite=overwrite)
+    return interaction_id, saved
+
+def poll_background_interaction_bounded(
+    *,
+    create_kwargs: dict[str, Any],
+    output_path: str | Path,
+    total_budget_s: float = 900.0,
+    poll_interval_s: float = 5.0,
+    client_factory: Callable[[int], Any],
+    clock: Callable[[], float] = time.monotonic,
+    sleep_fn: Callable[[float], None] = time.sleep,
+    overwrite: bool = False,
+) -> tuple[str, Path]:
+    """End-to-end bounded create(background=True) -> poll interactions.get -> atomic text commit."""
+    if total_budget_s <= 0:
+        raise ValueError("total_budget_s must be > 0")
+    deadline = clock() + total_budget_s
+    interaction = call_with_remaining_budget(
+        lambda c: c.interactions.create(**{**create_kwargs, "background": True}),
+        deadline=deadline,
+        client_factory=client_factory,
+        clock=clock,
+    )
+    interaction_id = getattr(interaction, "id", None) or "unknown"
+    while getattr(interaction, "status", None) in ("in_progress", "queued"):
+        remaining_s = deadline - clock()
+        if remaining_s <= 0:
+            raise TimeoutError(f"Long decode timed out (interaction={interaction_id}); reconcile status before rerunning.")
+        sleep_fn(min(poll_interval_s, remaining_s))
+        interaction = call_with_remaining_budget(
+            lambda c: c.interactions.get(id=interaction_id),
+            deadline=deadline,
+            client_factory=client_factory,
+            clock=clock,
+        )
+    if getattr(interaction, "status", None) != "completed":
+        raise RuntimeError(f"Background interaction failed: status={getattr(interaction, 'status', None)!r}")
+    steps = getattr(interaction, "steps", None) or []
+    full_text = "".join(
+        part.text
+        for step in steps
+        if getattr(step, "type", None) == "model_output"
+        for part in (getattr(step, "content", None) or [])
+        if getattr(part, "type", None) == "text" and getattr(part, "text", None)
+    ) or (getattr(interaction, "output_text", None) or "")
+    saved = atomic_write_verified_bytes(output_path, full_text.encode("utf-8"), deadline=deadline, clock=clock, overwrite=overwrite)
+    return interaction_id, saved
 ```
