@@ -120,15 +120,15 @@ if parsed.scheme != "https" or parsed.hostname != "generativelanguage.googleapis
 resource_name = match.group(1)
 
 deadline = time.monotonic() + 600  # 10-minute bounded polling deadline
-while True:
+while time.monotonic() < deadline:
     f_info = client.files.get(name=resource_name)
     if f_info.state.name == "ACTIVE":
         break
     if f_info.state.name == "FAILED":
         raise RuntimeError("Video generation failed on Files API.")
-    if time.monotonic() >= deadline:
-        raise TimeoutError(f"Timed out waiting for {resource_name}; check status before rerunning.")
     time.sleep(5)
+else:
+    raise TimeoutError(f"Timed out waiting for {resource_name}; check status before rerunning.")
 
 video_bytes = client.files.download(file=resource_name)
 with open(output_path, "wb") as f:
