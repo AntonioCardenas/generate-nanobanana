@@ -48,10 +48,17 @@ from google import genai
 
 client = genai.Client()
 
-mime_type, _ = mimetypes.guess_type(str(image_path))
+frame_bytes = Path(image_path).read_bytes()
+if frame_bytes.startswith(b"\x89PNG\r\n\x1a\n"):
+    mime_type = "image/png"
+elif frame_bytes.startswith(b"\xff\xd8\xff"):
+    mime_type = "image/jpeg"
+elif frame_bytes[:4] == b"RIFF" and frame_bytes[8:12] == b"WEBP":
+    mime_type = "image/webp"
+else:
+    mime_type, _ = mimetypes.guess_type(str(image_path))
 if mime_type not in {"image/png", "image/jpeg", "image/webp"}:
     raise ValueError(f"Unsupported starting-frame MIME {mime_type} for {image_path}")
-frame_bytes = Path(image_path).read_bytes()
 
 interaction = client.interactions.create(
     model="gemini-omni-1.2-flash",

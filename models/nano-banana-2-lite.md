@@ -25,12 +25,20 @@ client = genai.Client()  # reads GEMINI_API_KEY from env
 
 input_parts = [{"type": "text", "text": prompt}]
 for ref_path in ref_paths:  # keep to 0-2 images for fast drafting (passed inside input, never a top-level reference_images arg)
-    mime_type, _ = mimetypes.guess_type(str(ref_path))
+    raw = Path(ref_path).read_bytes()
+    if raw.startswith(b"\x89PNG\r\n\x1a\n"):
+        mime_type = "image/png"
+    elif raw.startswith(b"\xff\xd8\xff"):
+        mime_type = "image/jpeg"
+    elif raw[:4] == b"RIFF" and raw[8:12] == b"WEBP":
+        mime_type = "image/webp"
+    else:
+        mime_type, _ = mimetypes.guess_type(str(ref_path))
     if mime_type not in {"image/png", "image/jpeg", "image/webp", "image/heic", "image/heif"}:
         raise ValueError(f"Unsupported reference MIME {mime_type} for {ref_path}")
     input_parts.append({
         "type": "image",
-        "data": base64.b64encode(Path(ref_path).read_bytes()).decode("utf-8"),
+        "data": base64.b64encode(raw).decode("utf-8"),
         "mime_type": mime_type,
     })
 
