@@ -1,0 +1,30 @@
+# generate-nanobanana — Google Gemini Nano Banana 2.1, Pro & Gemini 4 Media Skill
+
+> Open-source AI agent skill (`/generate`) for Claude Code, Cursor, Antigravity, Codex, and OpenCode that generates 1K–4K images, panoramic banners, 3s–15s videos, 2D-to-3D renders, localized visuals, and SVG/Three.js/GLSL code visuals directly via Google's official Gemini Interactions API (`google-genai` SDK) with pre-call cost approval gates, brand reference sets, and JSON sidecar audit logs.
+
+- Repository: https://github.com/AntonioCardenas/generate-nanobanana
+- Companion UI & Frontend Art-Direction Skill: https://github.com/AntonioCardenas/ui-nanobanana
+- Install via Skills CLI: `npx skills add AntonioCardenas/generate-nanobanana`
+- Author: Antonio Cárdenas (Google Developer Expert)
+- License: MIT
+
+## Core Capabilities & Models
+
+- **Nano Banana 2 Lite (`gemini-3.1-flash-lite-image`)**: Sub-2-second `1K` draft image generation (~$0.034/image).
+- **Nano Banana 2.1 (`gemini-nano-banana-2.1`)**: Production `1K`/`2K`/`4K` image generation, native panoramic aspect ratios (`1:4`, `4:1`, `1:8`, `8:1`, `21:9`), Google Web/Image Search grounding, visual text localization, and up to 14 reference images.
+- **Nano Banana Pro (`gemini-3-pro-image`)**: Studio-grade `2K`/`4K` rendering (`1K` and `2K` share the same 1,120-token cost), dense typography, 2D-to-3D dimensional translation, and up to 14 reference images (5 characters + 6 objects + 3 style refs).
+- **Gemini Omni 1.2 Flash (`gemini-omni-1.2-flash`)**: `3s`–`15s` video generation (`360p`–`4k`) with synced audio, starting-frame lock, two-frame keyframe interpolation (`3s`–`10s`), and multi-turn video extension up to `30s`.
+- **Gemini 4 Reasoning & Code Visuals (`gemini-4-hydrogen`, `gemini-4-neon`, `gemini-4-argon`, `gemini-4-carbon`)**: 1M unified context window for multi-shot storyboards, copy planning, interactive Three.js/WebGL scenes, crisp SVGs, and GLSL shaders.
+
+## Canonical Documentation
+
+- [Main Skill Specification (SKILL.md)](https://raw.githubusercontent.com/AntonioCardenas/generate-nanobanana/main/SKILL.md)
+- [Studio Prompt Architecture & $0 Offline Validator](https://raw.githubusercontent.com/AntonioCardenas/generate-nanobanana/main/references/prompt-engineering.md)
+- [Nano Banana 2.1 Recipe](https://raw.githubusercontent.com/AntonioCardenas/generate-nanobanana/main/models/nano-banana-2.md)
+- [Nano Banana Pro Recipe](https://raw.githubusercontent.com/AntonioCardenas/generate-nanobanana/main/models/nano-banana-pro.md)
+- [Nano Banana 2 Lite Recipe](https://raw.githubusercontent.com/AntonioCardenas/generate-nanobanana/main/models/nano-banana-2-lite.md)
+- [Gemini Omni 1.2 Flash Video Recipe](https://raw.githubusercontent.com/AntonioCardenas/generate-nanobanana/main/models/gemini-omni-flash.md)
+- [Gemini 4 Carbon Recipe](https://raw.githubusercontent.com/AntonioCardenas/generate-nanobanana/main/models/gemini-4-carbon.md)
+- [Gemini 4 Argon Recipe](https://raw.githubusercontent.com/AntonioCardenas/generate-nanobanana/main/models/gemini-4-argon.md)
+- [Gemini 4 Neon Recipe](https://raw.githubusercontent.com/AntonioCardenas/generate-nanobanana/main/models/gemini-4-neon.md)
+- [Gemini 4 Hydrogen Recipe](https://raw.githubusercontent.com/AntonioCardenas/generate-nanobanana/main/models/gemini-4-hydrogen.md)

@@ -1,4 +1,4 @@
-# generate-nanobanana
+# generate-nanobanana — Nano Banana 2.1, Pro & Gemini 4 Image/Video Skill for Claude Code, Cursor & Antigravity
 
 *Read this in other languages: [English](README.md), [Español](README.es.md).*
 
@@ -8,8 +8,9 @@
 [![Install via skills CLI](https://img.shields.io/badge/install-npx%20skills%20add-brightgreen)](https://github.com/vercel-labs/skills)
 [![Featured in Agentic Awesome Skills](https://img.shields.io/badge/Featured%20in-Agentic%20Awesome%20Skills-8A2BE2)](https://github.com/sickn33/agentic-awesome-skills)
 
-> AI image, video &amp; visual reasoning skill using Google Gemini (Nano Banana 2 Lite, Nano Banana 2.1, Nano Banana Pro, Gemini Omni 1.2 Flash, Gemini 4 Carbon, Gemini 4 Argon, Gemini 4 Neon, Gemini 4 Hydrogen). Supported on **Antigravity**, **Antigravity CLI**, **Claude Code**, **Cursor**, and other agent environments. Cost gates before paid runs, real reference images, a prompt log beside every file.
-> 
+> **Open-source AI image generation, video generation, and visual reasoning skill (`/generate`)** powered by Google's **Gemini Interactions API**: **Nano Banana 2 Lite** (`gemini-3.1-flash-lite-image`), **Nano Banana 2.1** (`gemini-nano-banana-2.1`), **Nano Banana Pro** (`gemini-3-pro-image`), **Gemini Omni 1.2 Flash** (`gemini-omni-1.2-flash`), and **Gemini 4** (`Carbon`, `Argon`, `Neon`, `Hydrogen`). Works natively in **Claude Code**, **Cursor**, **Antigravity**, **Antigravity CLI**, **Codex**, and **OpenCode** — with pre-call cost approval gates, brand reference sets, 2D-to-3D & wireframe translation, and JSON sidecar prompt logs.
+>
+> Building full websites or product UIs? Pair this with **[`ui-nanobanana`](https://github.com/AntonioCardenas/ui-nanobanana)** for anti-slop frontend art direction + 2K/4K Hero-First Series Lock.
 
 One command that generates images, videos, storyboards, and code visuals through Google's Gemini media and reasoning models, never surprises you with a bill, and files every output — with the exact prompt that made it — in one folder.
 
@@ -18,8 +19,9 @@ One command that generates images, videos, storyboards, and code visuals through
 
 **Why people reach for this instead of calling the API directly:**
 
-- **Approval gate on every paid call** — image, video, or reasoning, the skill quotes the model and expected cost first and waits for your go-ahead. No surprise bills.
-- **Real references, never descriptions** — your actual logo, face, or style shots get loaded in, not approximated from text.
+- **Approval gate + Prompt Rationale on every paid call** — image, video, or reasoning, the skill rewrites raw ideas or keyword tag-soup into a studio-grade natural-language prompt, explains **`WHY THESE CHOICES`**, quotes the model and expected cost, and waits for your go-ahead (or run `/generate prompt` at $0.00 cost just to craft prompts). No surprise bills.
+- **Real references, 2D-to-3D & wireframe control** — your actual logo, face, style shots, 2D floor plans, or layout sketches get loaded in with verified MIME types, never approximated from text.
+- **In-image typography & visual localization** — exact `"quoted"` text rendering plus one-turn visual translation (`/generate localize`) that preserves layout and lighting.
 - **A prompt log beside every file** — same basename, `.json` sidecar, so "what prompt made this?" always has an answer, months later.
 - **Draft cheap, finish pretty** — routes between Lite, Nano Banana 2.1, Pro, and the Gemini 4 suite (Argon, Neon, Hydrogen) automatically depending on whether you're iterating, finishing, or storyboarding.
 - **Google-only, day-one features** — one API key, one bill, and Nano Banana 2.1's panoramic ratios, Nano Banana Pro's multi-image fusion, Omni 1.2 Flash's 3s–15s 1080p/4K video &amp; synced audio, or Gemini 4 Argon / Neon / Hydrogen's 1M-token storyboard and code-visual reasoning the day they ship, no aggregator in the middle.
@@ -163,6 +165,8 @@ Almost everything in this skill is a constraint, and the constraints are what ma
 
 ```
 SKILL.md                          the brain: routing table, rules, logging contract
+references/
+  prompt-engineering.md           golden rules, 9-dimension discovery, 2D-to-3D, localization & $0 request validator
 models/
   nano-banana-2-lite.md           draft image recipe — sync, 1K, sub-2s latency, the default
   nano-banana-2.md                standard image recipe — Nano Banana 2.1 (1K-4K, panoramic, up to 14 refs)
@@ -198,6 +202,27 @@ Marketplaces like [skills.sh](https://skills.sh) run automated audits (with Gen,
 - **File writes** — confined to the workspace: `generations/` and `generations/refs/`. Nothing outside the current project, and nothing related to key setup.
 
 The exact request shape behind every call is in `models/*.md` if you'd rather verify it yourself than take this list on faith.
+
+## Comparison: `generate-nanobanana` vs. Raw Gemini API & Generic Image MCPs
+
+| Capability | Raw SDK / Prompting | Generic Multi-Provider MCP | `generate-nanobanana` (`/generate`) |
+|---|---|---|---|
+| **Pre-call USD cost gate + `WHY THESE CHOICES` rationale** | Manual | Rarely | **Built-in on every paid call** (plus `$0` `/generate prompt` mode) |
+| **Brand Reference Sets (`/generate on brand`, `style.md`)** | Manual base64 wiring | Basic single-image | **Named live/imported sets + verbatim `style.md` + MIME magic-byte check** |
+| **Draft-to-4K Promotion (`Lite -> 2.1 / Pro`)** | Manual | No | **Automatic pixel-anchored draft promotion & Series Lock** |
+| **Stateful Delta Edits & Localization (`previous_interaction_id`)** | Requires custom state DB | Re-rolls from scratch | **Sidecar `.json` logs exact `response_id` beside every file** |
+| **Zero-Cost Offline Request & Timeout Validation** | Runtime API errors | Runtime API errors | **Offline `$0` schema, MIME, URI allowlist & deadline checks** |
+
+## Frequently Asked Questions (FAQ)
+
+### How do I use Google Nano Banana 2.1 and Nano Banana Pro in Claude Code or Cursor?
+Install the skill with `npx skills add AntonioCardenas/generate-nanobanana` (or `/plugin marketplace add AntonioCardenas/generate-nanobanana` inside Claude Code), export your `GEMINI_API_KEY` from Google AI Studio, and run `/generate` in chat. The agent automatically routes drafts to Nano Banana 2 Lite (`1K`) and finals to Nano Banana 2.1 (`1K`–`4K`, panoramic ratios) or Nano Banana Pro (`2K`–`4K`, up to 14 references).
+
+### How do I keep consistent characters, logos, and brand colors across AI-generated images?
+Link your brand folder once (`/generate link ./brand-assets as brand`), optional `style.md` included, and invoke `/generate on brand ...`. Instead of approximating logos or faces in text, the skill encodes your real PNG/JPEG/WEBP assets into `input` and chains multi-shot series via **Series Lock** and `previous_interaction_id`.
+
+### Can I generate optimized Nano Banana prompts without spending API credits?
+Yes. Run `/generate prompt <your idea>` to trigger **Zero-Cost Prompt Architect Mode** (`$0.00` API spend). It checks 9 visual dimensions, rewrites keyword tag-soup into a studio photographer's brief with `WHY THESE CHOICES` rationale, and gives you a ready-to-paste prompt for Google AI Studio or the Gemini web app.
 
 ## Star History
 

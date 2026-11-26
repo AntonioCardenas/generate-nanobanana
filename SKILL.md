@@ -1,18 +1,19 @@
 ---
 name: generate
-description: Generate images, videos, storyboards, and code visuals using Google's Gemini media and reasoning models (Nano Banana 2 Lite, Nano Banana 2.1, Nano Banana Pro, Gemini Omni 1.2 Flash, Gemini 4 Carbon, Gemini 4 Argon, Gemini 4 Neon, Gemini 4 Hydrogen) via the Gemini API. Use this whenever the user asks to generate, create, or make an image or video, wants a thumbnail, wants to animate a still image, says "generate on brand" or "generate from reference", wants to link or import a folder of reference images, invokes /generate or /generate frf, or asks to update this skill ("/generate update") — even if they don't name a specific model, and even if they just describe a visual they want without saying "generate."
+description: Generate images, videos, storyboards, code visuals, and studio-grade Nano Banana prompts using Google's Gemini media and reasoning models (Nano Banana 2 Lite, Nano Banana 2.1, Nano Banana Pro, Gemini Omni 1.2 Flash, Gemini 4 Carbon, Gemini 4 Argon, Gemini 4 Neon, Gemini 4 Hydrogen) via the Gemini API. Use this whenever the user asks to generate, create, localize, or make an image or video, wants an optimized Nano Banana prompt ("/generate prompt" or "nano banana prompt"), wants a thumbnail, wants to convert a 2D sketch/floor plan/wireframe to 3D or high-fidelity media, wants to animate a still image, says "generate on brand" or "generate from reference", wants to link or import a folder of reference images, invokes /generate or /generate frf, or asks to update this skill ("/generate update") — even if they don't name a specific model, and even if they just describe a visual they want without saying "generate."
 ---
 
 # /generate
 
-Calls Google's Gemini media and frontier reasoning models directly through the Gemini API — no third-party routing layer. One key, one bill, and access to the newest Google-specific features (Nano Banana 2.1's panoramic ratios and search grounding, Nano Banana Pro's multi-image fusion, Omni 1.2 Flash's 3s–15s 1080p/4K video and up to 30s extensions, and the Gemini 4 Carbon / Argon / Neon / Hydrogen 1M-token storyboard and code-visual reasoning suite) as soon as they ship.
+Calls Google's Gemini media and frontier reasoning models directly through the Gemini API — no third-party routing layer. One key, one bill, and access to the newest Google-specific features (Nano Banana 2.1's panoramic ratios, visual localization, and search grounding, Nano Banana Pro's 14-reference fusion and 2D-to-3D dimensional translation, Omni 1.2 Flash's 3s–15s 1080p/4K video and up to 30s extensions, and the Gemini 4 Carbon / Argon / Neon / Hydrogen 1M-token storyboard and code-visual reasoning suite) as soon as they ship.
 
 ## How a generation flows
 
-1. **Route** — pick the model for the job (draft image, standard image, quality image, video, or storyboard / code visual) and read its recipe file before calling anything. Recipes hold the exact request shape and any quirks that have shown up since the model shipped.
-2. **Load references** — pull any real reference images (logos, faces, style shots) from `generations/refs/`, or from a named reference set if the request invokes `/generate frf` or says "from reference" or "on brand" (see Reference library). Never substitute a text description for a reference image that exists.
-3. **Generate** — call the API per the recipe, through the **Interactions API** (`client.interactions.create`) — the current, documented entry point for every model below. Images reply synchronously; large videos (>4MB) and >64K-token Gemini 4 (Carbon, Argon, Neon, Hydrogen) decodes use submit-then-poll. Save the result flat into the generations folder.
-4. **Log** — verify the generated file is actually on disk and non-empty, then write the sidecar JSON next to it (see Logging). Never log a generation whose file isn't there.
+1. **Discover & Architect the Prompt** — read [`references/prompt-engineering.md`](references/prompt-engineering.md). If the user's vision is underspecified across key dimensions (subject, setting, lighting, mood, composition, purpose, quoted text, or aspect ratio), ask **at most 2–3 targeted questions** first. Rewrite keyword "tag soup" into a natural-language creative brief with tactile materiality, camera/lighting direction, and purpose context. (If the user invoked **`/generate prompt …`**, output the `PROMPT` + `WHY THESE CHOICES` block at **$0.00 cost** and offer iterative refinement without calling any API.)
+2. **Route** — pick the model for the job (draft image, standard image, quality image, video, or storyboard / code visual) and read its recipe file in `models/` before calling anything. Run an offline request-shape check (verifying model-specific `image_size`, `thinking_level`, and MIME types) before quoting.
+3. **Load references** — pull any real reference images (logos, faces, style shots, 2D sketches, floor plans, or layout wireframes) from `generations/refs/`, or from a named reference set if the request invokes `/generate frf` or says "from reference" or "on brand" (see Reference library). Pass them as `{"type": "image", "data": ..., "mime_type": ...}` parts inside `input=[...]` with detected MIME types — never substitute a text description for a reference image that exists.
+4. **Quote with Rationale & Generate** — present the assembled **`PROMPT`**, concise **`WHY THESE CHOICES`** notes, the target model ID, and the expected USD cost, and wait for explicit approval. Once approved, call the **Interactions API** (`client.interactions.create`) per the recipe. Images reply synchronously; large videos (>4MB) and >64K-token Gemini 4 decodes use bounded submit-then-poll (`deadline`). Save the result flat into the generations folder.
+5. **Log** — verify the generated file is actually on disk and non-empty, then write the sidecar JSON next to it (see Logging). Never log a generation whose file isn't there.
 
 ## Models
 
@@ -94,7 +95,17 @@ Two different jobs hide under "make it again": re-running one image, and keeping
 
 **Style anchors for sets.** A reference set may carry a `style.md` — in `generations/refs/<name>/` for imported sets, in the linked folder for linked sets — holding a short, fixed description of the set's look: palette, lighting, camera, rendering style. When present, prepend its contents to the prompt **verbatim** on every generation from that set. Don't paraphrase it; the whole point is that the same words hit the model every time. The sidecar's `prompt` field records the full assembled prompt, style block included. (`style.md` is a text anchor, never a reference image — don't try to send it as one.)
 
-**Series lock.** For a run of images that must match each other — a character across scenes, a product line, episode covers — generate the first, get the user's approval on it, then pass that approved image as a reference into every subsequent call, on top of the set's refs and style block. Character-consistency series belong on Nano Banana Pro.
+**Series lock.** For a run of images that must match each other — a character across scenes, a product line, episode covers — generate the first, get the user's approval on it, then pass that approved image as an `input` image block into every subsequent call, on top of the set's refs and style block. Character-consistency series belong on Nano Banana Pro.
+
+## Prompt Craft & Special Capabilities
+
+See [`references/prompt-engineering.md`](references/prompt-engineering.md) for the full 9-dimension discovery table, anti-pattern rewrites, and offline request validator:
+
+- **Zero-Cost Prompt Architect (`/generate prompt <idea>`)** — Crafts an optimized natural-language Nano Banana / Omni Flash prompt with a **`WHY THESE CHOICES`** rationale block at **$0.00 API cost** (ready to copy into Google AI Studio / the Gemini app, or execute immediately once approved).
+- **Natural Language Over Tag Soup** — Never send comma-separated keyword lists (`"dog, park, 4k, cinematic"`). Write full creative direction sentences specifying tactile materials (`brushed steel`, `unbleached linen`), camera angle/lens, lighting direction, and use-case context.
+- **Exact On-Image Text & Visual Localization (`/generate localize <image> <language>`)** — Always wrap exact rendered text in `"quotation marks"` with explicit font-style cues (`"bold Art Deco gold serif"`). To translate text inside an existing graphic while keeping its typography, layout, and lighting intact, pass the image in `input` (or chain via `previous_interaction_id`) and prompt: `"Translate all text in this image into <language>, keeping typography style, layout, and lighting identical."`
+- **Dimensional Translation (`2D <-> 3D`: `/generate 2d-to-3d <sketch>`)** — Pass a hand-drawn product sketch, 2D architectural floor plan, or flat UI wireframe in `input` to render photorealistic 3D studio objects, interior visualizations, or high-fidelity design comps.
+- **Structural Control via Layout Sketches (`/generate sketch <wireframe> …`)** — Upload a rough layout sketch or grid diagram in `input` to dictate exact spatial placement of subjects, text blocks, and negative-space safe zones.
 
 ## Supported Environments & Agents
 
@@ -123,8 +134,8 @@ git clone https://github.com/AntonioCardenas/generate-nanobanana ~/.claude/skill
 "/generate update" — or any ask to update this skill — refreshes the installed copy in place:
 
 1. **Find the install** — the folder this `SKILL.md` was loaded from.
-2. **Refresh it** — if the folder is a git clone (has `.git`), run `git pull` inside it. Otherwise re-run `npx skills add AntonioCardenas/generate-nanobanana`, which re-resolves to the latest and overwrites the install; if that's unavailable, clone the repo to a temp folder and copy `SKILL.md`, `models/`, and the READMEs over the installed files.
-3. **Report what changed** — summarize the recent commit titles or the diff of `SKILL.md` and `models/`, so the user knows what they just got.
+2. **Refresh it** — if the folder is a git clone (has `.git`), run `git pull` inside it. Otherwise re-run `npx skills add AntonioCardenas/generate-nanobanana`, which re-resolves to the latest and overwrites the install; if that's unavailable, clone the repo to a temp folder and copy `SKILL.md`, `models/`, `references/`, and the READMEs over the installed files.
+3. **Report what changed** — summarize the recent commit titles or the diff of `SKILL.md`, `models/`, and `references/`, so the user knows what they just got.
 4. **Restart to load it** — the running session keeps the old version; tell the user to restart, same as after a fresh install.
 
 An update touches only the skill's own files. Never touch the workspace's `generations/` folder, reference sets, or `sets.json` — that's the user's data, not the skill's.

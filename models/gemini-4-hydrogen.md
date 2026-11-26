@@ -21,17 +21,21 @@ In `/generate` and `/ui`, reach for `gemini-4-hydrogen` when you need fast, cost
 ```python
 from google import genai
 import base64
+import mimetypes
+from pathlib import Path
 
 client = genai.Client()  # reads GEMINI_API_KEY from env
 
 input_parts = [{"type": "text", "text": prompt}]
-for ref_path in reference_images:
-    with open(ref_path, "rb") as f:
-        input_parts.append({
-            "type": "image",
-            "data": base64.b64encode(f.read()).decode("utf-8"),
-            "mime_type": "image/png",
-        })
+for ref_path in ref_paths:
+    mime_type, _ = mimetypes.guess_type(str(ref_path))
+    if mime_type not in {"image/png", "image/jpeg", "image/webp", "image/heic", "image/heif"}:
+        raise ValueError(f"Unsupported reference MIME {mime_type} for {ref_path}")
+    input_parts.append({
+        "type": "image",
+        "data": base64.b64encode(Path(ref_path).read_bytes()).decode("utf-8"),
+        "mime_type": mime_type,
+    })
 
 interaction = client.interactions.create(
     model="gemini-4-hydrogen",
@@ -59,7 +63,10 @@ interaction = client.interactions.create(
     },
 )
 
+deadline = time.monotonic() + 900  # 15-minute bounded deadline for long decode
 while interaction.status in ("in_progress", "queued"):
+    if time.monotonic() >= deadline:
+        raise TimeoutError(f"Long decode timed out (interaction={interaction.id})")
     time.sleep(5)
     interaction = client.interactions.get(id=interaction.id)
 

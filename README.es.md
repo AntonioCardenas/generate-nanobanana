@@ -17,8 +17,9 @@ Un solo comando que genera imágenes, videos, storyboards y visuales por código
 
 **Por qué la gente prefiere esto en lugar de llamar a la API directamente:**
 
-- **Control de aprobación en cada llamada de pago** — imagen, video o razonamiento, la skill cotiza el modelo y el costo esperado primero y espera tu aprobación. Sin facturas sorpresa.
-- **Referencias reales, nunca descritas** — tu logotipo, rostro o estilo real se cargan tal cual, no se aproximan a partir de una descripción de texto.
+- **Control de aprobación + Razonamiento del Prompt en cada llamada de pago** — imagen, video o razonamiento, la skill transforma ideas vagas o listas de etiquetas (*tag soup*) en un prompt en lenguaje natural de nivel estudio, explica **`WHY THESE CHOICES`**, cotiza el modelo y el costo esperado y espera tu aprobación (o ejecuta `/generate prompt` a costo $0.00 solo para diseñar prompts). Sin facturas sorpresa.
+- **Referencias reales, traducción 2D a 3D y control por wireframes** — tu logotipo, rostro, capturas de estilo, planos arquitectónicos 2D o bocetos de composición se cargan con detección real de MIME, nunca aproximados en texto.
+- **Tipografía en imagen y localización visual** — renderizado exacto de texto `"entre comillas"` más traducción visual en un turno (`/generate localize`) preservando iluminación y diseño.
 - **Un registro de prompt al lado de cada archivo** — mismo nombre base, sidecar `.json`, así que "¿qué prompt generó esto?" siempre tiene respuesta, meses después.
 - **Borrador económico, acabado de calidad** — alterna automáticamente entre Lite, Nano Banana 2.1, Pro y la familia Gemini 4 (Argon, Neon, Hydrogen) según si estás iterando, finalizando o armando storyboards.
 - **Exclusivo para Google, funciones desde el primer día** — una sola clave de API, una sola factura, y las relaciones de aspecto panorámicas de Nano Banana 2.1, la fusión de múltiples imágenes de Nano Banana Pro, el video de 3s–15s en 1080p/4K y audio sincronizado de Omni 1.2 Flash, o el razonamiento de storyboards y código visual de 1M de tokens de Gemini 4 Argon, Neon y Hydrogen el mismo día de su lanzamiento, sin intermediarios.
@@ -162,6 +163,8 @@ Casi todo en esta skill es una restricción, y son estas restricciones las que l
 
 ```
 SKILL.md                          el cerebro: tabla de ruteo, reglas, contrato de registro
+references/
+  prompt-engineering.md           reglas de oro, descubrimiento en 9 dimensiones, 2D a 3D, localización y validador $0
 models/
   nano-banana-2-lite.md           receta de borrador de imagen — síncrono, 1K, latencia <2s, predeterminado
   nano-banana-2.md                receta de imagen estándar — Nano Banana 2.1 (1K-4K, panorámico, hasta 14 refs)

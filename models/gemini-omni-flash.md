@@ -42,17 +42,21 @@ with open(output_path, "wb") as f:
 Gemini Omni 1.2 Flash binds uploaded images and videos to their roles using **natural language** based on their order in `input` (do **not** use deprecated `<FIRST_FRAME>`, `<LAST_FRAME>`, or `<IMAGE_REF_N>` tags):
 ```python
 import base64
+import mimetypes
+from pathlib import Path
 from google import genai
 
 client = genai.Client()
 
-with open(image_path, "rb") as f:
-    frame_bytes = f.read()
+mime_type, _ = mimetypes.guess_type(str(image_path))
+if mime_type not in {"image/png", "image/jpeg", "image/webp"}:
+    raise ValueError(f"Unsupported starting-frame MIME {mime_type} for {image_path}")
+frame_bytes = Path(image_path).read_bytes()
 
 interaction = client.interactions.create(
     model="gemini-omni-1.2-flash",
     input=[
-        {"type": "image", "data": base64.b64encode(frame_bytes).decode("utf-8"), "mime_type": "image/png"},
+        {"type": "image", "data": base64.b64encode(frame_bytes).decode("utf-8"), "mime_type": mime_type},
         {"type": "text", "text": f"Use this image as the starting frame. {prompt}"},
     ],
     response_format={"type": "video", "aspect_ratio": "16:9", "resolution": "720p", "duration": "5s"},
@@ -86,9 +90,11 @@ extended = client.interactions.create(
 )
 ```
 
-### Large outputs (>4MB / 1080p / 4K) — retrieve via URI
+### Large outputs (>4MB / 1080p / 4K) — retrieve via verified Files URI with deadline
 ```python
+import re
 import time
+from urllib.parse import urlparse
 from google import genai
 
 client = genai.Client()
@@ -100,17 +106,24 @@ interaction = client.interactions.create(
 )
 
 video_output = interaction.output_video
-file_name = video_output.uri.split("/")[-1]
+parsed = urlparse(video_output.uri or "")
+match = re.fullmatch(r"/(?:v1(?:beta)?/)?(files/[a-z0-9-]+)", parsed.path)
+if parsed.scheme != "https" or parsed.hostname != "generativelanguage.googleapis.com" or not match:
+    raise RuntimeError(f"Untrusted or malformed video output URI: {video_output.uri}")
+resource_name = match.group(1)
 
+deadline = time.monotonic() + 600  # 10-minute bounded polling deadline
 while True:
-    f_info = client.files.get(name=f"files/{file_name}")
+    f_info = client.files.get(name=resource_name)
     if f_info.state.name == "ACTIVE":
         break
     if f_info.state.name == "FAILED":
-        raise RuntimeError("Generation failed.")
+        raise RuntimeError("Video generation failed on Files API.")
+    if time.monotonic() >= deadline:
+        raise TimeoutError(f"Timed out waiting for {resource_name}; check status before rerunning.")
     time.sleep(5)
 
-video_bytes = client.files.download(file=video_output.uri)
+video_bytes = client.files.download(file=resource_name)
 with open(output_path, "wb") as f:
     f.write(video_bytes)
 ```

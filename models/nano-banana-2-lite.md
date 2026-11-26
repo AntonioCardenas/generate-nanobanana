@@ -18,17 +18,21 @@ Fastest, cheapest Gemini image model (sub-2-second latency target). Default for 
 ```python
 from google import genai
 import base64
+import mimetypes
+from pathlib import Path
 
 client = genai.Client()  # reads GEMINI_API_KEY from env
 
 input_parts = [{"type": "text", "text": prompt}]
-for ref_path in reference_images:  # keep to 0-2 images for fast drafting (endpoint accepts up to 14 object refs)
-    with open(ref_path, "rb") as f:
-        input_parts.append({
-            "type": "image",
-            "data": base64.b64encode(f.read()).decode("utf-8"),
-            "mime_type": "image/png",
-        })
+for ref_path in ref_paths:  # keep to 0-2 images for fast drafting (passed inside input, never a top-level reference_images arg)
+    mime_type, _ = mimetypes.guess_type(str(ref_path))
+    if mime_type not in {"image/png", "image/jpeg", "image/webp", "image/heic", "image/heif"}:
+        raise ValueError(f"Unsupported reference MIME {mime_type} for {ref_path}")
+    input_parts.append({
+        "type": "image",
+        "data": base64.b64encode(Path(ref_path).read_bytes()).decode("utf-8"),
+        "mime_type": mime_type,
+    })
 
 interaction = client.interactions.create(
     model="gemini-3.1-flash-lite-image",

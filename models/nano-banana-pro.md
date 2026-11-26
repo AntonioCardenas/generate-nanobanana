@@ -20,17 +20,21 @@ Google's studio-grade reasoning image model (`gemini-3-pro-image`). Built for co
 ```python
 from google import genai
 import base64
+import mimetypes
+from pathlib import Path
 
 client = genai.Client()
 
 input_parts = [{"type": "text", "text": prompt}]
-for ref_path in reference_images:  # up to 14 supported (up to 6 objects, 5 characters, 3 style refs)
-    with open(ref_path, "rb") as f:
-        input_parts.append({
-            "type": "image",
-            "data": base64.b64encode(f.read()).decode("utf-8"),
-            "mime_type": "image/png",
-        })
+for ref_path in ref_paths:  # up to 14 supported in input (up to 6 objects, 5 characters, 3 style refs)
+    mime_type, _ = mimetypes.guess_type(str(ref_path))
+    if mime_type not in {"image/png", "image/jpeg", "image/webp", "image/heic", "image/heif"}:
+        raise ValueError(f"Unsupported reference MIME {mime_type} for {ref_path}")
+    input_parts.append({
+        "type": "image",
+        "data": base64.b64encode(Path(ref_path).read_bytes()).decode("utf-8"),
+        "mime_type": mime_type,
+    })
 
 interaction = client.interactions.create(
     model="gemini-3-pro-image",
@@ -63,3 +67,4 @@ Same shape as Nano Banana 2 Lite — see that recipe for the full save snippet. 
 - **When to pick Pro over Nano Banana 2.1:** Pro is worth the premium specifically for 5-character consistency, dedicated style-reference blending (up to 3 style refs + 6 objects + 5 characters = 14 total), and the hardest layout/typography prompts. For everyday finals, panoramic ratios (`1:4`, `4:1`, `1:8`, `8:1`), or video-to-image inputs, Nano Banana 2.1 (`gemini-nano-banana-2.1`) is faster and a third of the price.
 - **Series lock:** For images that must match each other (a character across scenes, a product line, episode covers), pass the approved first image of the series as one of the references in every subsequent call, or chain edits with `previous_interaction_id`.
 - **No `seed` parameter is documented on the Interactions API.** Hold `image_size` and `aspect_ratio` fixed across reruns for a consistent composition, and always log `interaction.id` in `response_id` in the sidecar.
+- **Typography, 2D-to-3D & wireframe control (see `references/prompt-engineering.md`):** Put exact on-image text in `"quotation marks"` with explicit font-style cues (`"bold Art Deco serif"`, `"engraved titanium grotesk"`). Pro excels at visual localization, converting 2D floor plans or industrial sketches into photorealistic 3D renders, and turning uploaded layout wireframes into studio-grade visual comps.

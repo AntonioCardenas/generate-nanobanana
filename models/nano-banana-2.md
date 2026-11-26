@@ -20,17 +20,21 @@ Google's primary high-efficiency workhorse image model — the GA successor to N
 ```python
 from google import genai
 import base64
+import mimetypes
+from pathlib import Path
 
 client = genai.Client()  # reads GEMINI_API_KEY from env
 
 input_parts = [{"type": "text", "text": prompt}]
-for ref_path in reference_images:  # up to 14 refs (up to 4 characters + 10 objects)
-    with open(ref_path, "rb") as f:
-        input_parts.append({
-            "type": "image",
-            "data": base64.b64encode(f.read()).decode("utf-8"),
-            "mime_type": "image/png",
-        })
+for ref_path in ref_paths:  # up to 14 refs (up to 4 characters + 10 objects), passed as image blocks in input
+    mime_type, _ = mimetypes.guess_type(str(ref_path))
+    if mime_type not in {"image/png", "image/jpeg", "image/webp", "image/heic", "image/heif"}:
+        raise ValueError(f"Unsupported reference MIME {mime_type} for {ref_path}")
+    input_parts.append({
+        "type": "image",
+        "data": base64.b64encode(Path(ref_path).read_bytes()).decode("utf-8"),
+        "mime_type": mime_type,
+    })
 
 interaction = client.interactions.create(
     model="gemini-nano-banana-2.1",
@@ -84,3 +88,4 @@ Same shape as Nano Banana 2 Lite — see that recipe for the full save snippet. 
 - **Stateful chaining:** Log `interaction.id` in `response_id` in the sidecar. `previous_interaction_id` is officially supported on `gemini-nano-banana-2.1` for server-side multi-turn edits without re-uploading prior images.
 - **Reference limits (up to 14 images):** Supports up to 4 character references for character consistency and up to 10 object references. When a job needs 5 characters, dedicated style reference slots (up to 3), or maximum creative reasoning on dense layouts, use Nano Banana Pro (`gemini-3-pro-image`).
 - **Panoramic aspect ratios:** `1:4`, `4:1`, `1:8`, and `8:1` are natively supported at `1K`, `2K`, and `4K` with tiling artifacts fixed in 2.1. (Legacy `512px` / `0.5K` from `gemini-3.1-flash-image` is not supported on `gemini-nano-banana-2.1`.)
+- **Prompting & special capabilities (see `references/prompt-engineering.md`):** Write natural-language creative briefs with tactile materiality and purpose context (never tag soup). Enclose exact rendered text in `"quotation marks"` with font-style cues, use `previous_interaction_id` for visual localization (`"Translate the text in this image to Japanese"`), and pass hand-drawn sketches, floor plans, or UI wireframes as `input` image parts for structural layout control or `2D -> 3D` dimensional translation.
