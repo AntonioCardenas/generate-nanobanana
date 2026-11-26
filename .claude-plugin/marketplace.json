@@ -5,7 +5,7 @@
     "url": "https://github.com/AntonioCardenas"
   },
   "metadata": {
-    "description": "AI image, video & visual reasoning skill for Google Gemini Nano Banana 2.1, Nano Banana Pro, Nano Banana 2 Lite, Gemini Omni 1.2 Flash, and Gemini 4 (Carbon, Argon, Neon, Hydrogen) with cost-approval gates and sidecar logs.",
+    "description": "Nano Banana skill for AI image, video & visual reasoning with Google Gemini Nano Banana 2.1, Nano Banana Pro, Nano Banana 2 Lite, Gemini Omni 1.2 Flash, and Gemini 4 (Carbon, Argon, Neon, Hydrogen) with cost-approval gates and sidecar logs.",
     "version": "1.3.0"
   },
   "plugins": [
@@ -21,9 +21,14 @@
       "repository": "https://github.com/AntonioCardenas/generate-nanobanana",
       "license": "MIT",
       "keywords": [
+        "nanobanana",
+        "nanobanana-skill",
         "nano-banana",
-        "nano-banana-2.1",
         "nano-banana-pro",
+        "pro-nano-banana",
+        "nano-banana-image",
+        "image-nano-banana",
+        "nano-banana-2.1",
         "gemini-4",
         "gemini-omni",
         "image-generation",

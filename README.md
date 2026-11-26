@@ -1,4 +1,4 @@
-# generate-nanobanana — Nano Banana 2.1, Pro & Gemini 4 Image/Video Skill for Claude Code, Cursor & Antigravity
+# nanobanana-skill — Nano Banana Image & Video Skill (Nano Banana Pro, 2.1 & Gemini 4) for Claude Code, Cursor & Antigravity
 
 *Read this in other languages: [English](README.md), [Español](README.es.md).*
 
@@ -8,7 +8,7 @@
 [![Install via skills CLI](https://img.shields.io/badge/install-npx%20skills%20add-brightgreen)](https://github.com/vercel-labs/skills)
 [![Featured in Agentic Awesome Skills](https://img.shields.io/badge/Featured%20in-Agentic%20Awesome%20Skills-8A2BE2)](https://github.com/sickn33/agentic-awesome-skills)
 
-> **Open-source AI image generation, video generation, and visual reasoning skill (`/generate`)** powered by Google's **Gemini Interactions API**: **Nano Banana 2 Lite** (`gemini-3.1-flash-lite-image`), **Nano Banana 2.1** (`gemini-nano-banana-2.1`), **Nano Banana Pro** (`gemini-3-pro-image`), **Gemini Omni 1.2 Flash** (`gemini-omni-1.2-flash`), and **Gemini 4** (`Carbon`, `Argon`, `Neon`, `Hydrogen`). Works natively in **Claude Code**, **Cursor**, **Antigravity**, **Antigravity CLI**, **Codex**, and **OpenCode** — with pre-call cost approval gates, brand reference sets, 2D-to-3D & wireframe translation, and JSON sidecar prompt logs.
+> **Open-source Nano Banana skill (`/generate`) for AI image generation, video generation, and visual reasoning**, powered by Google's **Gemini Interactions API**: **Nano Banana 2 Lite** (`gemini-3.1-flash-lite-image`), **Nano Banana 2.1** (`gemini-nano-banana-2.1`), **Nano Banana Pro** (`gemini-3-pro-image`), **Gemini Omni 1.2 Flash** (`gemini-omni-1.2-flash`), and **Gemini 4** (`Carbon`, `Argon`, `Neon`, `Hydrogen`). Works natively in **Claude Code**, **Cursor**, **Antigravity**, **Antigravity CLI**, **Codex**, and **OpenCode** — with pre-call cost approval gates, brand reference sets, 2D-to-3D & wireframe translation, and JSON sidecar prompt logs.
 >
 > Building full websites or product UIs? Pair this with **[`ui-nanobanana`](https://github.com/AntonioCardenas/ui-nanobanana)** for anti-slop frontend art direction + 2K/4K Hero-First Series Lock.
 
@@ -83,9 +83,9 @@ This uses `npx` with the [skills CLI](https://github.com/vercel-labs/skills), wh
 Prefer to do it by hand:
 
 ```bash
-git clone https://github.com/AntonioCardenas/generate-nanobanana ~/tools/generate-nanobanana
+git clone https://github.com/AntonioCardenas/generate-nanobanana ~/tools/nanobanana-skill
 mkdir -p ~/.claude/skills
-cp -R ~/tools/generate-nanobanana ~/.claude/skills/generate
+cp -R ~/tools/nanobanana-skill ~/.claude/skills/generate
 ```
 
 **Restart your agent session if this is the first skill you've ever installed.** Most agents (Claude Code included) watch an existing skills directory and pick up new or updated skills mid-session with no restart — but the very first skill install creates that directory, and the file watcher only covers directories that existed when the session started. If `/generate` doesn't show up right after installing, restart once; after that, updates apply live.
@@ -104,7 +104,7 @@ Then just ask:
 /generate a 16:9 thumbnail for my Angular signals article, use refs/logo.png
 ```
 
-The repo is named `generate-nanobanana` so it's findable; the skill installs under the folder name `generate` (see the install steps above), which is what agents like Claude Code turn into the `/generate` command — so the command stays short regardless of the repo's name.
+The project is called `nanobanana-skill` (GitHub repo: `AntonioCardenas/generate-nanobanana`) so it's findable; the skill installs under the folder name `generate` (see the install steps above), which is what agents like Claude Code turn into the `/generate` command — so the command stays short regardless of the project's name.
 
 ## How a generation flows
 
@@ -203,9 +203,9 @@ Marketplaces like [skills.sh](https://skills.sh) run automated audits (with Gen,
 
 The exact request shape behind every call is in `models/*.md` if you'd rather verify it yourself than take this list on faith.
 
-## Comparison: `generate-nanobanana` vs. Raw Gemini API & Generic Image MCPs
+## Comparison: `nanobanana-skill` vs. Raw Gemini API & Generic Image MCPs
 
-| Capability | Raw SDK / Prompting | Generic Multi-Provider MCP | `generate-nanobanana` (`/generate`) |
+| Capability | Raw SDK / Prompting | Generic Multi-Provider MCP | `nanobanana-skill` (`/generate`) |
 |---|---|---|---|
 | **Pre-call USD cost gate + `WHY THESE CHOICES` rationale** | Manual | Rarely | **Built-in on every paid call** (plus `$0` `/generate prompt` mode) |
 | **Brand Reference Sets (`/generate on brand`, `style.md`)** | Manual base64 wiring | Basic single-image | **Named live/imported sets + verbatim `style.md` + MIME magic-byte check** |
@@ -214,6 +214,9 @@ The exact request shape behind every call is in `models/*.md` if you'd rather ve
 | **Zero-Cost Offline Request & Timeout Validation** | Runtime API errors | Runtime API errors | **Offline `$0` schema, MIME, URI allowlist & deadline checks** |
 
 ## Frequently Asked Questions (FAQ)
+
+### What is the Nano Banana skill?
+`nanobanana-skill` is an open-source agent skill that brings Google's Nano Banana image models — Nano Banana 2 Lite, Nano Banana 2.1, and Nano Banana Pro — plus Gemini Omni 1.2 Flash video and Gemini 4 reasoning into Claude Code, Cursor, Antigravity, Codex, and OpenCode. Ask in plain language for a Nano Banana image, a Pro Nano Banana render, or a Nano Banana prompt (or type `/generate`), and it quotes the cost before every paid call.
 
 ### How do I use Google Nano Banana 2.1 and Nano Banana Pro in Claude Code or Cursor?
 Install the skill with `npx skills add AntonioCardenas/generate-nanobanana` (or `/plugin marketplace add AntonioCardenas/generate-nanobanana` inside Claude Code), export your `GEMINI_API_KEY` from Google AI Studio, and run `/generate` in chat. The agent automatically routes drafts to Nano Banana 2 Lite (`1K`) and finals to Nano Banana 2.1 (`1K`–`4K`, panoramic ratios) or Nano Banana Pro (`2K`–`4K`, up to 14 references).

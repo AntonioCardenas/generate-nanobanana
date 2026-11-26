@@ -1,7 +1,8 @@
-# generate-nanobanana — Google Gemini Nano Banana 2.1, Pro & Gemini 4 Media Skill
+# nanobanana-skill — Google Gemini Nano Banana, Nano Banana Pro & Gemini 4 Image/Video Skill
 
-> Open-source AI agent skill (`/generate`) for Claude Code, Cursor, Antigravity, Codex, and OpenCode that generates 1K–4K images, panoramic banners, 3s–15s videos, 2D-to-3D renders, localized visuals, and SVG/Three.js/GLSL code visuals directly via Google's official Gemini Interactions API (`google-genai` SDK) with pre-call cost approval gates, brand reference sets, and JSON sidecar audit logs.
+> Open-source Nano Banana agent skill (`/generate`) for Claude Code, Cursor, Antigravity, Codex, and OpenCode that generates 1K–4K images, panoramic banners, 3s–15s videos, 2D-to-3D renders, localized visuals, and SVG/Three.js/GLSL code visuals directly via Google's official Gemini Interactions API (`google-genai` SDK) with pre-call cost approval gates, brand reference sets, and JSON sidecar audit logs.
 
+- Project name: `nanobanana-skill` (also searched as: nano banana, nano banana skill, nano banana pro, pro nano banana, nano banana image, image nano banana)
 - Repository: https://github.com/AntonioCardenas/generate-nanobanana
 - Companion UI & Frontend Art-Direction Skill: https://github.com/AntonioCardenas/ui-nanobanana
 - Install via Skills CLI: `npx skills add AntonioCardenas/generate-nanobanana`

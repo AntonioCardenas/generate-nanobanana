@@ -1,4 +1,4 @@
-# generate-nanobanana
+# nanobanana-skill — Skill de Nano Banana para imágenes y video (Nano Banana Pro, 2.1 y Gemini 4) en Claude Code, Cursor y Antigravity
 
 *Leer en otros idiomas: [English](README.md), [Español](README.es.md).*
 
@@ -8,7 +8,7 @@
 [![Instalación vía skills CLI](https://img.shields.io/badge/instalar-npx%20skills%20add-brightgreen)](https://github.com/vercel-labs/skills)
 [![Destacado en Agentic Awesome Skills](https://img.shields.io/badge/Destacado%20en-Agentic%20Awesome%20Skills-8A2BE2)](https://github.com/sickn33/agentic-awesome-skills)
 
-> Skill para la generación de imágenes, videos y razonamiento visual con IA usando Google Gemini (Nano Banana 2 Lite, Nano Banana 2.1, Nano Banana Pro, Gemini Omni 1.2 Flash, Gemini 4 Carbon, Gemini 4 Argon, Gemini 4 Neon, Gemini 4 Hydrogen). Compatible con **Antigravity**, **Antigravity CLI**, **Claude Code**, **Cursor** y otros entornos de agentes. Control de costos antes de ejecuciones de pago, imágenes de referencia reales y un registro de prompts al lado de cada archivo.
+> Skill de Nano Banana (`/generate`) para la generación de imágenes, videos y razonamiento visual con IA usando Google Gemini (Nano Banana 2 Lite, Nano Banana 2.1, Nano Banana Pro, Gemini Omni 1.2 Flash, Gemini 4 Carbon, Gemini 4 Argon, Gemini 4 Neon, Gemini 4 Hydrogen). Compatible con **Antigravity**, **Antigravity CLI**, **Claude Code**, **Cursor** y otros entornos de agentes. Control de costos antes de ejecuciones de pago, imágenes de referencia reales y un registro de prompts al lado de cada archivo.
 
 Un solo comando que genera imágenes, videos, storyboards y visuales por código a través de los modelos de medios y razonamiento de Gemini de Google, que nunca te sorprende con una factura inesperada y archiva cada resultado —con el prompt exacto que lo generó— en una sola carpeta.
 
@@ -81,9 +81,9 @@ Esto utiliza `npx` con el [skills CLI](https://github.com/vercel-labs/skills), q
 Si prefieres hacerlo manualmente:
 
 ```bash
-git clone https://github.com/AntonioCardenas/generate-nanobanana ~/tools/generate-nanobanana
+git clone https://github.com/AntonioCardenas/generate-nanobanana ~/tools/nanobanana-skill
 mkdir -p ~/.claude/skills
-cp -R ~/tools/generate-nanobanana ~/.claude/skills/generate
+cp -R ~/tools/nanobanana-skill ~/.claude/skills/generate
 ```
 
 **Reinicia tu sesión del agente solo si esta es la primera skill que instalas.** La mayoría de los agentes (Claude Code incluido) vigilan un directorio de skills ya existente y detectan skills nuevas o actualizadas a mitad de sesión sin reiniciar — pero la primerísima instalación crea ese directorio, y el detector de cambios solo cubre directorios que ya existían cuando comenzó la sesión. Si `/generate` no aparece justo después de instalar, reinicia una vez; después de eso, las actualizaciones se aplican en caliente.
@@ -102,7 +102,7 @@ Luego simplemente pregunta:
 /generate a 16:9 thumbnail for my Angular signals article, use refs/logo.png
 ```
 
-El repositorio se llama `generate-nanobanana` para que sea fácil de encontrar; la skill se instala bajo la carpeta `generate` (ver los pasos de instalación arriba), que es lo que agentes como Claude Code convierten en el comando `/generate` — así el comando se mantiene corto sin importar el nombre del repositorio.
+El proyecto se llama `nanobanana-skill` (repositorio en GitHub: `AntonioCardenas/generate-nanobanana`) para que sea fácil de encontrar; la skill se instala bajo la carpeta `generate` (ver los pasos de instalación arriba), que es lo que agentes como Claude Code convierten en el comando `/generate` — así el comando se mantiene corto sin importar el nombre del proyecto.
 
 ## Cómo fluye una generación
 
